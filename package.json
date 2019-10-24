@@ -1,0 +1,21 @@
+{
+  "name": "trello2moment",
+  "version": "1.0.0",
+  "description": "Convert Trello cards to schema.org",
+  "main": "trello2moment",
+  "scripts": {
+    "test": "test.js"
+  },
+  "author": "Quinn Hart",
+  "license": "MIT",
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "jsonfile": "^5.0.0",
+    "lodash": "^4.17.15",
+    "marked": "^0.7.0",
+    "n3": "^1.2.1",
+    "path": "^0.12.7",
+    "traverse": "^0.6.6",
+    "yargs": "^14.2.0"
+  }
+}
