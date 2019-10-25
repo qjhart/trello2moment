@@ -78,7 +78,7 @@ function moment (board) {
     function add_spo(s,p,o) {
       if(typeof(o)==='string')
         o.replace(/[\s\n]+$/,'');
-      console.log(`{"${s.id}","${p}","${o}"}`);
+      console.error(`{"${s.id}","${p}","${o}"}`);
 
       let predicates={
         'when':schema.temporal,
@@ -92,12 +92,12 @@ function moment (board) {
       if (p && o) {
         if (typeof(o)==='string') {
           if (o.match(urlre)) {
-            o=namedNode(o);
-            console.log(`{<${s.id}>,<${p.id}>,<${o}>}`);
+            o=namedNode(o.replace('https://trello.com/c/','#'));
+            console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
           }
           else {
             o=literal(o)
-            console.log(`{<${s.id}>,<${p.id}>,"${o}"}`);
+            console.error(`{<${s.id}>,<${p.id}>,"${o}"}`);
           }
         }
         add(s,p,o);
@@ -107,7 +107,7 @@ function moment (board) {
     let in_connection=false;
 
     let pred='';
-    let text=[];
+    let text=[''];
     let link=null;
     let link_count=1;
     let list_depth=0;
@@ -117,12 +117,12 @@ function moment (board) {
     json.push({type:'heading','text':'EndQ'});
 
     json.forEach((item)=>{
-      console.log(item);
+      //console.error(item);
       switch (item.type) {
       case 'heading':
         if (item.text.toLowerCase() === 'connections') {
           in_connection=true;
-          console.log('in_connection');
+          //console.error('in_connection');
         } else {
           if(! in_connection) {
             add_spo(node,pred,text[0]);
@@ -132,16 +132,16 @@ function moment (board) {
           pred=item.text;
         }
         list_depth=0;
-        text=[];
+        text=[''];
         break;
       case 'list_start':
         list_depth++;
         text[list_depth]='';
-        console.log(`list_depth=${list_depth}`);
+        //console.error(`list_depth=${list_depth}`);
         break;
       case 'list_end':
         list_depth--;
-        console.log(`list_depth=${list_depth}`);
+        //console.error(`list_depth=${list_depth}`);
         break;
       case 'list_item_start':
         break;
@@ -149,32 +149,30 @@ function moment (board) {
         // List act differently in connections header
         if (in_connection) {
           if (list_depth === 2 && link && link.node && text[2]) {
-            console.log(`add_spo(${link.node},${schema.description},${text[2]})`);
+            console.error(`add_spo(${link.node},${schema.description},${text[2]})`);
             add_spo(link.node,schema.description,text[2]);
           } else if (list_depth === 1) {
             // split text, get url
             text[1]=text[1].replace(/[\s\n]+$/,'');
             let t=text[1].split(" ");
-            console.log(`"${text[1]}"`);
-            console.log(t);
             link={
-              node:namedNode(`${node.id}_`+link_count++),
+              node:namedNode(node.id.replace('https://trello.com/c/','#')+'_'+link_count++),
             };
             add_spo(link.node,rdf.type,schema.significantLinks);
 
             link.target=t.pop();
-            console.log(`link.target: ${link.target}`);
             // Really the link type should be just one word that would be a
             // schema.about, but it's not being used that way
             link.name=t.join(" ");
             if(link.name) {
-              console.log(`add_spo(${link.node.id},${schema.name.id},"${link.name}")`);
+              console.error(`add_spo(${link.node.id},${schema.name.id},"${link.name}")`);
               add_spo(link.node,schema.name,link.name);
             }
             if (link.target.match(urlre)) {
-              console.log(`add_spo(${node.id},${link.node.id},${link.target})`);
+              console.error(`add_spo(${node.id},${link.node.id},${link.target})`);
               add_spo(node,link.node,link.target);
             }
+            text[1]='';
           }
         } else {
           add_spo(node,pred,text[0]);
@@ -206,7 +204,7 @@ function moment (board) {
 	  add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.publisher,literal("University of California, Davis. General Library. Dept. of Special Collections")) ;
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
-    console.log(`SHORTLINK: ${card.shortUrl}`);
+    console.error(`SHORTLINK: ${card.shortUrl}`);
     if ("desc" in card)
       add_desc(n,card.desc);
   }
