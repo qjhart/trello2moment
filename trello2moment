@@ -33,7 +33,7 @@ var schema = {
   WebPage:1,
   description:1,
   license:1,
-  mainTopicOfPage:1,
+  relatedLink:1,
   name:1,
   publisher:1,
   significantLinks:1,
@@ -77,17 +77,24 @@ function moment (board) {
 
     function add_spo(s,p,o) {
       if(typeof(o)==='string')
-        o.replace(/[\s\n]+$/,'');
-      console.error(`{"${s.id}","${p}","${o}"}`);
+        o=o.replace(/[\s\n]+$/,'');
+      console.error(`add_desc.add_spo{"${s.id}","${p}","${o}"}`);
 
       let predicates={
         'when':schema.temporal,
         'description':schema.description,
-        'links to learn more':schema.mainTopicOfPage,
+        'links to learn more':schema.relatedLink,
         'location':schema.spatial
       };
-      if (typeof(p)==='string')
+      if (typeof(p)==='string') {
+        p.replace(/[\s\n]+$/,'');
         p=predicates[p.toLowerCase()];
+      }
+      if (typeof(s)==='string') {
+        if (s.match(urlre)) {
+          s=namedNode(s.replace('https://trello.com/c/','#'));
+        }
+      }
 
       if (p && o) {
         if (typeof(o)==='string') {
@@ -124,7 +131,7 @@ function moment (board) {
           in_connection=true;
           //console.error('in_connection');
         } else {
-          if(! in_connection) {
+          if(! in_connection && text[0]) {
             add_spo(node,pred,text[0]);
           }
           in_connection=false;
@@ -160,23 +167,46 @@ function moment (board) {
             };
             add_spo(link.node,rdf.type,schema.significantLinks);
 
-            link.target=t.pop();
-            // Really the link type should be just one word that would be a
-            // schema.about, but it's not being used that way
-            link.name=t.join(" ");
-            if(link.name) {
-              console.error(`add_spo(${link.node.id},${schema.name.id},"${link.name}")`);
-              add_spo(link.node,schema.name,link.name);
-            }
-            if (link.target.match(urlre)) {
-              console.error(`add_spo(${node.id},${link.node.id},${link.target})`);
-              add_spo(node,link.node,link.target);
+            link.object=t.pop();
+            link.predicate=t.pop();
+
+            // Forward link => predicate is name, object is URL
+            if (link.object.match(urlre)) {
+              console.error(`add_spo(${link.node.id},${schema.name.id},"${link.predicate}")`);
+              add_spo(link.node,schema.name,link.predicate);
+              console.error(`add_spo(${node.id},${link.node.id},${link.object})`);
+              add_spo(node,link.node,link.object);
+            } else if (link.predicate.match(urlre)) { // Reverse Links Predicate is URL
+              console.error(`add_spo(${link.node.id},${schema.name.id},"${link.object}")`);
+              add_spo(link.node,schema.name,link.object);
+              console.error(`add_spo(${link.predicate},${link.node.id},${node.id})`);
+              add_spo(link.predicate,link.node,node);
+            } else {
+              console.error(`BAD(${link.node.id},${link.predicate},${link.object})`);
             }
             text[1]='';
           }
         } else {
-          add_spo(node,pred,text[0]);
-          text[0]='';
+          switch(pred) {
+          case "Location":
+            if (list_depth===1) {
+              add_spo(node,pred,text[list_depth]);
+            }
+            break;
+          case "When":
+            if (list_depth===1) {
+              add_spo(node,pred,text[list_depth]);
+            }
+            break;
+          case "Links to Learn More":
+            if (list_depth===2) {
+              add_spo(node,pred,text[list_depth]);
+            }
+            break
+          default:
+            console.error(`# ${node},${pred} ${text[1]} #`);
+          }
+          text[list_depth]='';
         }
         break;
       case 'text':
@@ -202,7 +232,6 @@ function moment (board) {
 
     add(n,schema.name,literal(card.name));
 	  add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
-    add(n,schema.publisher,literal("University of California, Davis. General Library. Dept. of Special Collections")) ;
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     console.error(`SHORTLINK: ${card.shortUrl}`);
     if ("desc" in card)
