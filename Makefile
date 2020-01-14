@@ -12,18 +12,18 @@ moment:=jop
 
 api=http https://api.trello.com/1/boards/$1 key==${key} token==${token}
 
-import:${board}/board.json
+import:${board}/${moment}.json
 
 files:=$(patsubst %,${board}/%.json,lists cards)
 
 .PHONY:files
 files:${files}
 
-${board}/board.json:
+${board}/${moment}.json:
 	[[ -d ${board} ]] || mkdir ${board};\
 	$(call api,${board}) > $@
 
-${files}:${board}/%.json:${board}/board.json
+${files}:${board}/%.json:${board}/${moment}.json
 	$(call api,${board}/$*) > $@
 
 thumbnails: ${board}/cards.json
