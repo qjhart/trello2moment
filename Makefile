@@ -4,8 +4,11 @@ SHELL:=/bin/bash
 key:=supply_on_cmd
 token:=supply_token_on_cmd
 
-board:=NgVOlKPZ
-moment:=chardonney
+#board:=NgVOlKPZ
+#moment:=chardonney
+
+board:=K2CNYMZP
+moment:=jop
 
 api=http https://api.trello.com/1/boards/$1 key==${key} token==${token}
 
