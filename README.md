@@ -12,19 +12,7 @@ The `NgVOlKPZ` directory shows an example board setup, and the `chardonney[.ttl]
 
 ### Run Example
 
-Open a Terminal window and run `make`.  The json should be created inside a directory which will be named after the Trello board's ID.
-
-#### Quick Note
-
-Example Terminal command:
-
-```bash
-make key=12345 token=abcdefg
-```
-
-This would avoid the temptation of pasting your key/token directly into the Make file at any point.
-
-## Accessing Trello's API
+#### Accessing Trello's API
 
 To access Trello's API you will need an API key.
 
@@ -34,6 +22,36 @@ To access Trello's API you will need an API key.
 4. Retrieve your API key and Token.
 5. Save these somewhere private. Do not commit the Makefile to github without removing this information first.
 6. Install [httpie](https://httpie.org/) because it's the best and everyone should use it.
+
+#### Set up
+
+Make sure the following programs are installed on your system.
+
+1. [Httpie](https://httpie.org/)
+2. [JQ](https://stedolan.github.io/jq/)
+3. [Apache Jena](https://jena.apache.org/)
+
+#### Store Key and Token as Variables in Terminal Session
+
+Open a Terminal window. Cut and paste your key and token into the Terminal.
+  
+Example:
+
+```bash
+key=1234 token=abcdef
+```
+
+Run `echo $key && echo $token`.
+
+#### Create Moment JSON
+
+Run `make key=$key token=$token board=XXX moment=XXX import`.
+
+The json should be created inside a directory which will be named after the Trello board's ID.
+
+#### Create Thumbnails
+
+Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
 
 ## LDP
 
