@@ -14,8 +14,6 @@ The `NgVOlKPZ` directory shows an example board setup, and the `chardonney[.ttl]
 
 #### Accessing Trello's API
 
-To access Trello's API you will need an API key.
-
 1. Create a Trello account
 2. Ask for an invitation to be added to the required Moment board
 3. Navigate to `https://trello.com/app-key`
