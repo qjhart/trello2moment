@@ -51,6 +51,10 @@ The json should be created inside a directory which will be named after the Trel
 
 Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
 
+#### Create .TTL File
+
+Run `make key=$key token=$token board=XXX moment=XXX jop.ttl thumbnails`
+
 ## LDP
 
 Don't ask, but there this example is currently available in the [sandbox](https://sandbox.dams.library.ucdavis.edu/fcrepo/rest/collection/ex-poetry/chardonney)

@@ -15,22 +15,24 @@ moment:=jop
 
 trello=http https://api.trello.com/1/boards/${board}/ key==${key} token==${token}
 
-import:${board}/${moment}.json
+import:${board}/board.json
 
 files:=$(patsubst %,${board}/%.json,lists cards)
 
 .PHONY:files
 files:${files}
 
-${board}/${moment}.json:
+${board}/board.json:
 	[[ -d ${board} ]] || mkdir ${board};\
 	${trello} lists==all cards==all card_attachments==true | jq . > $@
 
 thumbnails: ${board}/board.json
 	[[ -d ${moment} ]] || mkdir ${moment};\
 	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
-	  IFS='|' read l a <<<$$i;  \
+	  IFS='|' read l a <<<"$$i";  \
+		echo i=$$i l=$$l a=$$a ; \
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
+		echo https://api.trello.com/1/cards/$$a key==${key} token==${token} ;\
 	  b=$$(basename $$url); \
 	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
 		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b ;\
