@@ -27,7 +27,14 @@ Make sure the following programs are installed on your system.
 
 1. [Httpie](https://httpie.org/)
 2. [JQ](https://stedolan.github.io/jq/)
-3. [Apache Jena](https://jena.apache.org/)
+3. [Apache Jena - Riot](https://jena.apache.org/documentation/io/)
+      - If you installed Jena using Homebrew make sure the path for riot in the Make file is pointing to the correct location to run the riot executable.
+
+        **Example**
+
+        ```bash
+        riot:=/usr/local/Cellar/jena/X.X.X/bin/riot
+        ```
 
 #### Store Key and Token as Variables in Terminal Session
 
@@ -53,7 +60,7 @@ Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
 
 #### Create .TTL File
 
-Run `make key=$key token=$token board=XXX moment=XXX jop.ttl thumbnails`
+Run `make key=$key token=$token board=XXX moment=XXX jop.ttl`
 
 ## LDP
 
