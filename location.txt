@@ -1,0 +1,36 @@
+#! /bin/bash
+perl -p \
+-e 's|<https://goo.gl/maps/DjrAkcqjzVJaQVBU8>|[a schema:Place; schema:url "https://goo.gl/maps/DjrAkcqjzVJaQVBU8";schema:name "Ch%C3%A2teau+L%C3%A9oville-Las+Cases"; schema:latitude 45.1638323; schema:longitude -0.7424355]|;' \
+-e 's|<https://goo.gl/maps/SPdaMx1UxWP64Fuf6>|[a schema:Place; schema:url "https://goo.gl/maps/SPdaMx1UxWP64Fuf6";schema:name "Mayacamas+Vineyards+%26+Winery";schema:latitude 38.365188;schema:longitude -122.4256317]|;' \
+-e 's|<https://goo.gl/maps/UT32LvgCdj7xACwr8>|[a schema:Place; schema:url "https://goo.gl/maps/UT32LvgCdj7xACwr8";schema:name "Institut+national+de+lorigine+et+de+la+qualit%C3%A9+(INAO)";schema:latitude 48.8503493;schema:longitude 2.4199647]|;' \
+-e 's|<https://goo.gl/maps/UytBCsafionpyVFz7>|[a schema:Place; schema:url "https://goo.gl/maps/UytBCsafionpyVFz7";schema:name "Chateau+Montelena+Winery";schema:latitude 38.6025142;schema:longitude -122.599904]|;' \
+-e 's|<https://goo.gl/maps/a52pYyCBXtQhaqX39>|[a schema:Place; schema:url "https://goo.gl/maps/a52pYyCBXtQhaqX39";schema:name "Ch%C3%A2teau+Montrose";schema:latitude 45.2465895;schema:longitude -0.7639582]|;' \
+-e 's|<https://goo.gl/maps/qzmExtQtVLW12yX9A>|[a schema:Place; schema:url "https://goo.gl/maps/qzmExtQtVLW12yX9A";schema:name "Heitz+Wine+Cellar";schema:latitude 38.5015586;schema:longitude -122.4187834]|;' \
+-e 's|<https://goo.gl/maps/gNjRYBf4CfA3gFRJ8>|[a schema:Place; schema:url "https://goo.gl/maps/gNjRYBf4CfA3gFRJ8";schema:name "Ch%C3%A2teau+Mouton+Rothschild";schema:latitude 45.2130751;schema:longitude -0.7720411]|;' \
+-e 's|<https://goo.gl/maps/TnDhLGhGvvdccTpSA>|[a schema:Place; schema:url "https://goo.gl/maps/TnDhLGhGvvdccTpSA";schema:name "Clos+Du+Val";schema:latitude 38.3871827;schema:longitude -122.3148005]|;' \
+-e 's|<https://goo.gl/maps/tiYKLDayRRBJSh6W6>|[a schema:Place; schema:url "https://goo.gl/maps/tiYKLDayRRBJSh6W6";schema:name "Altadena,+CA";schema:latitude 34.1938654;schema:longitude -118.1712585]|;' \
+-e 's|<https://goo.gl/maps/KRMRF4gah15thiDLA>|[a schema:Place; schema:url "https://goo.gl/maps/KRMRF4gah15thiDLA";schema:name "Freemark+Abbey+Winery";schema:latitude 38.5255567;schema:longitude -122.4985412]|;' \
+-e 's|<https://goo.gl/maps/CVydmpYamEdPdYnv7>|[a schema:Place; schema:url "https://goo.gl/maps/CVydmpYamEdPdYnv7";schema:name "Oenoth%C3%A8que+Joseph+Drouhin";schema:latitude 47.0235971;schema:longitude 4.8359425]|;' \
+-e 's|<https://goo.gl/maps/jx4h9iqTqYxaU2U29>|[a schema:Place; schema:url "https://goo.gl/maps/jx4h9iqTqYxaU2U29";schema:name "Spring+Mountain+Vineyard";schema:latitude 38.50707;schema:longitude -122.4940895]|;' \
+-e 's|<https://goo.gl/maps/8UX3fMWc3HHAEmER6>|[a schema:Place; schema:url "https://goo.gl/maps/8UX3fMWc3HHAEmER6";schema:name "Geneva,+Switzerland";schema:latitude 46.2050242;schema:longitude 6.1090692]|;' \
+-e 's|<https://goo.gl/maps/qviCL4m9apPGeWxw5>|[a schema:Place; schema:url "https://goo.gl/maps/qviCL4m9apPGeWxw5";schema:name "Domaine+Roman%C3%A9e+Conti";schema:latitude 47.1617666;schema:longitude 4.9529227]|;' \
+-e 's|<https://goo.gl/maps/iS7p7BkyTwXjDDDaA>|[a schema:Place; schema:url "https://goo.gl/maps/iS7p7BkyTwXjDDDaA";schema:name "Riverside,+CA";schema:latitude 33.9459362;schema:longitude -117.5396128]|;' \
+-e 's|<https://goo.gl/maps/yn8of9kU8WcHYY9u6>|[a schema:Place; schema:url "https://goo.gl/maps/yn8of9kU8WcHYY9u6";schema:name "Desne,+Croatia";schema:latitude 43.0657306;schema:longitude 17.5267338]|;' \
+-e 's|<https://goo.gl/maps/TyYW7B6RSnus49DY6>|[a schema:Place; schema:url "https://goo.gl/maps/TyYW7B6RSnus49DY6";schema:name "Taillevent";schema:latitude 48.8701734;schema:longitude 2.3031831]|;' \
+-e 's|<https://goo.gl/maps/KqpdakWQWtAHTKeF8>|[a schema:Place; schema:url "https://goo.gl/maps/KqpdakWQWtAHTKeF8";schema:name "Napa,+CA";schema:latitude 38.2859417;schema:longitude -122.3599985]|;' \
+-e 's|<https://goo.gl/maps/rC1A95VLu9j9GuYd8>|[a schema:Place; schema:url "https://goo.gl/maps/rC1A95VLu9j9GuYd8";schema:name "David+Bruce+Winery";schema:latitude 37.167834;schema:longitude -122.0479977]|;' \
+-e 's|<https://goo.gl/maps/YFS5oT6aiNgLQYQS6>|[a schema:Place; schema:url "https://goo.gl/maps/YFS5oT6aiNgLQYQS6";schema:name "Moscow,+Russia";schema:latitude 55.5807482;schema:longitude 36.825156]|;' \
+-e 's|<https://goo.gl/maps/aMWZeg6kXcAxNkde7>|[a schema:Place; schema:url "https://goo.gl/maps/aMWZeg6kXcAxNkde7";schema:name "Le+Grand+V%C3%A9four";schema:latitude 48.8661299;schema:longitude 2.3357972]|;' \
+-e 's|<https://goo.gl/maps/ELajMh5a7SbtFJh68>|[a schema:Place; schema:url "https://goo.gl/maps/ELajMh5a7SbtFJh68";schema:name "Veedercrest+Ranch";schema:latitude 38.361717;schema:longitude -122.4194027]|;' \
+-e 's|<https://goo.gl/maps/HSP5RmmitwNwWPvy7>|[a schema:Place; schema:url "https://goo.gl/maps/HSP5RmmitwNwWPvy7";schema:name "La+Tour+dArgent";schema:latitude 48.8497866;schema:longitude 2.3527581]|;' \
+-e 's|<https://goo.gl/maps/cUqTPGzroPjWphBP7>|[a schema:Place; schema:url "https://goo.gl/maps/cUqTPGzroPjWphBP7";schema:name "Leflaive+Domaine";schema:latitude 46.944697;schema:longitude 4.7510253]|;' \
+-e 's|<https://goo.gl/maps/8qbEx7HgZ6z9sKgg9>|[a schema:Place; schema:url "https://goo.gl/maps/8qbEx7HgZ6z9sKgg9";schema:name "Chateau+Montelena+Winery";schema:latitude 38.602514;schema:longitude -122.5999107]|;' \
+-e 's|<https://goo.gl/maps/jzHJY2jVE9633ERf9>|[a schema:Place; schema:url "https://goo.gl/maps/jzHJY2jVE9633ERf9";schema:name "1+Rue+Charles+Giraud,+21190+Meursault,+France";schema:latitude 46.9770936;schema:longitude 4.7728859]|;' \
+-e 's|<https://goo.gl/maps/UU38Tffo2YEPBbk39>|[a schema:Place; schema:url "https://goo.gl/maps/UU38Tffo2YEPBbk39";schema:name "25+Rue+Royale,+75008+Paris,+France";schema:latitude 48.8690432;schema:longitude 2.3211506]|;' \
+-e 's|<https://goo.gl/maps/22g2WtmvPazmsAjJ8>|[a schema:Place; schema:url "https://goo.gl/maps/22g2WtmvPazmsAjJ8";schema:name "Ridge+Vineyards";schema:latitude 37.299637;schema:longitude -122.1180374]|;' \
+-e 's|<https://goo.gl/maps/bMF9XinJpfKeidVo6>|[a schema:Place; schema:url "https://goo.gl/maps/bMF9XinJpfKeidVo6";schema:name "48%C2%B052'08.5%22N+2%C2%B019'23.9%22E";schema:latitude 48.8689261;schema:longitude 2.3233234]|;' \
+-e 's|<https://goo.gl/maps/DngBWRM7UBj2siW66>|[a schema:Place; schema:url "https://goo.gl/maps/DngBWRM7UBj2siW66";schema:name "InterContinental+Paris+-+Le+Grand";schema:latitude 48.870834;schema:longitude 2.3282383]|;' \
+-e 's|<https://goo.gl/maps/QQAfC8okfgXNF4kB9>|[a schema:Place; schema:url "https://goo.gl/maps/QQAfC8okfgXNF4kB9";schema:name "Smithsonian+National+Museum+of+American+History";schema:latitude 38.891154;schema:longitude -77.0318748]|;' \
+-e 's|<https://goo.gl/maps/1Z84CzL8oewDcVud8>|[a schema:Place; schema:url "https://goo.gl/maps/1Z84CzL8oewDcVud8";schema:name "Wilmington,+DE";schema:latitude 39.729881;schema:longitude -75.5995244]|;' \
+-e 's|<https://goo.gl/maps/QpZ7UnAeddiLK33R7>|[a schema:Place; schema:url "https://goo.gl/maps/QpZ7UnAeddiLK33R7";schema:name "Domaine+Ramonet";schema:latitude 46.9342374;schema:longitude 4.7223589]|;' \
+-e 's|<https://goo.gl/maps/5H2vY5uJVRwDtqZp8>|[a schema:Place; schema:url "https://goo.gl/maps/5H2vY5uJVRwDtqZp8";schema:name "Boulogne-Billancourt,+France";schema:latitude 48.8374891;schema:longitude 2.2253054]|;' jop_orig.ttl > jop_loc.ttl
