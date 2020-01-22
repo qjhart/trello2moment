@@ -6,6 +6,7 @@ const jf=require('jsonfile');
 const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
+const request=require('request');
 const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
@@ -53,7 +54,7 @@ function moment (board_name) {
 
 	function add(s,p,o) {
 		return writer.addQuad(s,p,o);
-	}
+  }
 
   // This function associates the trello column name with a schema type.
   // The schema type is used as the <> a schema:Foo part.
@@ -73,17 +74,15 @@ function moment (board_name) {
           card_type[l.id]=schema[m];
         } else {
           console.error(`namedNode(${prefix.ucdlib}${m})`);
-          card_type[l.id]=namedNode(prefix.ucdlib+m.replace(/\s+/g,'_'));
+          card_type[l.id]=namedNode(prefix.ucdlib+m.replace(/\s+/g,'_'));          
         }
       }
     });
   }
 
   function add_desc(node,desc) {
-
     // This version of add will do some additional testing for adding literals.etc
     function add_spo(s,p,o) {
-
       const urlre=/^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/;
 
       if(typeof(o)==='string')
@@ -114,7 +113,7 @@ function moment (board_name) {
             console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
           }
           else {
-            o=literal(o)
+            o=literal(o);
             console.error(`{<${s.id}>,<${p.id}>,"${o}"}`);
           }
         }
@@ -142,11 +141,11 @@ function moment (board_name) {
       case 'list_start':
         list_depth++;
         text[list_depth]='';
-        //console.error(`list_depth=${list_depth}`);
+        console.error(`list_depth=${list_depth}`);
         break;
       case 'list_end':
         list_depth--;
-        //console.error(`list_depth=${list_depth}`);
+        console.error(`list_depth=${list_depth}`);
         break;
       case 'list_item_start':
         break;
@@ -186,7 +185,6 @@ function moment (board_name) {
       }
     });
   }
-
 
   function add_card(card) {
     let type=card_type[card.idList];
@@ -268,7 +266,9 @@ function moment (board_name) {
 
   cards.forEach((k)=>add_card(k));
 
-  writer.end(function (error, result) { console.log(result); });
+  writer.end(function (error, result) { 
+    console.log(result);
+  });
 
   if (true) {
 	  if ( errl.length>0 || warnl.length>0) {
