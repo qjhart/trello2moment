@@ -64,7 +64,7 @@ Run `make key=$key token=$token board=XXX moment=XXX jop.ttl`
 
 #### Trello2Moment
 
-Run ``
+Run `node trello2moment --board=BOARD_NAME`
 
 ## LDP
 
