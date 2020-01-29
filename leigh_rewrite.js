@@ -65,6 +65,8 @@ async function mapCardsFunction(cards) {
     try {
       const result = await find_location(el);
       return result;
+    } finally {
+      console.log();
     } catch (error) {
       console.log("mapsCardFunction Error", error);
     }
