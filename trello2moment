@@ -268,11 +268,11 @@ function moment (board_name) {
   cards.forEach((k)=>add_card(k));
 
   writer.end(function (error, result) { 
-    /*
-    fs.writeFile('result2.txt', result, (err) => {
+
+    fs.writeFile('result2.ttl', result, (err) => {
       console.log('Saved!');
     });
-    */
+
     console.log(result); 
   });
 

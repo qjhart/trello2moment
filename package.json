@@ -19,5 +19,7 @@
     "traverse": "^0.6.6",
     "yargs": "^14.2.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "fetch": "^1.1.0"
+  }
 }
