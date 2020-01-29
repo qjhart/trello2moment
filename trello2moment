@@ -54,12 +54,27 @@ Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 */
 let argv = yargs.usage('trello2moment --board=[Short URL]').demandOption(['board']).argv;
 let board_name = argv.board;
-
 //let board_name = 'K2CNYMZP';
+
+let writer = new N3.Writer({prefixes: prefix});
 
 let card_type = {};
 let cards = getCards(board_name);
-mapCardsFunction(cards);
+
+async function add() {
+  await mapCardsFunction(cards);
+  writer.end((error, result) => {
+    if ( !error ) {
+      fs.writeFile('result1.ttl', result, (err) => {
+        console.log(result);
+      });
+    } else {
+      console.log("Error: ", error);
+    }
+  });
+}
+
+add();
 
 // https://itnext.io/https-medium-com-popov4ik4-what-about-promises-in-loops-e94c97ad39c0
 async function mapCardsFunction(cards) {
@@ -77,7 +92,6 @@ async function mapCardsFunction(cards) {
 
 function add_card(array) {
   //console.log(array);
-  let writer = new N3.Writer({prefixes: prefix});
 
   function add(s,p,o) {
     return writer.addQuad(s,p,o);
@@ -225,24 +239,7 @@ function add_card(array) {
     });
   }
 
-  function callback() {
-     writer.end((error, result) => {
-      if ( !error ) {
-        fs.writeFile('result1.ttl', result, (err) => {
-          //console.log('Saved!');
-          console.log(result);
-        });
-      } else {
-        console.log("Error: ", error);
-      }
-    });
-  }
-
-  let itemsProcessed = 0;
   array.forEach((card, key, array) => {
-    itemsProcessed++;
-    if ( itemsProcessed === array.length ) callback();
-
     let attachment_re = new RegExp('https://trello.com/c/(.*)/.*$');
     let type = card_type[array[key].idList];
 
@@ -349,9 +346,7 @@ async function find_location(card) {
         setTimeout(() => {
           request.get(options, (error, response) => setTimeout(() => {
             if ( error ) reject(error);
-            else {
-              resolve(response.headers.location);
-            }
+            else resolve(response.headers.location);
           }, 1000));
         }, 1000);
       });
