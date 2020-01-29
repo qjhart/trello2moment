@@ -6,10 +6,11 @@ const jf=require('jsonfile');
 const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
-const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
+const { namedNode, literal, defaultGraph, quad, blank } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
 const traverse = require('traverse');
+const request=require('request');
 
 var prefix= {
   schema: 'http://schema.org/',
@@ -20,9 +21,7 @@ var prefix= {
   rdf: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 }
 
-var rdf= {
-  type:1
-}
+var rdf= {type:1};
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
 var schema = {
@@ -36,85 +35,89 @@ var schema = {
   description:1,
   license:1,
   relatedLink:1,
+  url:1,
   name:1,
   publisher:1,
   significantLinks:1,
   spatial:1,
+  longitude:1,
+  latitude:1,
   temporal:1,
   thumbnail:1,
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-function moment (board_name) {
-	let errl=[];
-	let warnl=[];
-	let writer=new N3.Writer({prefixes: prefix});
-  let card_type={};
+/**
+  GOAL:
+    organize/loop everything and prepare as an array/object.
+    THEN send it to the writer
+*/
+let argv = yargs.usage('trello2moment --board=[Short URL]').demandOption(['board']).argv;
+let board_name = argv.board;
 
-	function add(s,p,o) {
-		return writer.addQuad(s,p,o);
-	}
+//let board_name = 'K2CNYMZP';
 
-  // This function associates the trello column name with a schema type.
-  // The schema type is used as the <> a schema:Foo part.
-  // Connections => schema:significantLinks.
-  function set_card_type_from_lists(lists) {
-    lists.forEach((l)=>{
-      let m = l.name;
-      if (m==='Connections') {
-        m='significantLinks';
-      }
-      if (m==='Object')
-        m='Thing';
+let card_type = {};
+let cards = getCards(board_name);
+mapCardsFunction(cards);
 
-      if (m!=='Card Creation Guides') {
-        if (m && schema[m]) {
-          //console.error(`schema[${m}]`);
-          card_type[l.id]=schema[m];
-        } else {
-          //console.error(`namedNode(${prefix.ucdlib}${m})`);
-          card_type[l.id]=namedNode(prefix.ucdlib+m.replace(/\s+/g,'_'));
-        }
-      }
-    });
+// https://itnext.io/https-medium-com-popov4ik4-what-about-promises-in-loops-e94c97ad39c0
+async function mapCardsFunction(cards) {
+  let resolvedFinalArray = await Promise.all(cards.map(async(el) => {
+    try {
+      const result = await find_location(el);
+      return result;
+    } catch (error) {
+      console.log("mapsCardFunction Error", error);
+    }
+  }));
+
+  add_card(resolvedFinalArray);
+}
+
+function add_card(array) {
+  //console.log(array);
+  let writer = new N3.Writer({prefixes: prefix});
+
+  function add(s,p,o) {
+    return writer.addQuad(s,p,o);
   }
 
-  function add_desc(node,desc) {
-
-    // This version of add will do some additional testing for adding literals.etc
+  function add_desc(node, desc, formattedLocationObj) {
+    // This version of add will do some additional testing for adding literals, etc
     function add_spo(s,p,o) {
       const urlre=/^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$/;
 
-      if(typeof(o)==='string')
-        o=o.replace(/[\s\n]+$/,'');
-      //console.error(`add_desc.add_spo{"${s.id}","${p}","${o}"}`);
-
-      let predicates={
-        'when':schema.temporal,
-        'description':schema.description,
-        'links to learn more':schema.relatedLink,
-        'location':schema.spatial
-      };
-
-      if (typeof(p)==='string') {
-        p.replace(/[\s\n]+$/,'');
-        p=predicates[p.toLowerCase()];
+      if( typeof(o) === 'string' ) {
+        o = o.replace(/[\s\n]+$/,'');
       }
 
-      if (typeof(s)==='string') {
-        if (s.match(urlre)) {
-          s=namedNode(s.replace('https://trello.com/c/','#'));
+      let predicates = {
+        'when': schema.temporal,
+        'description': schema.description,
+        'links to learn more': schema.relatedLink,
+        'location': schema.spatial
+      };
+
+      if ( typeof(p) === 'string' ) {
+        p.replace(/[\s\n]+$/,'');
+        p = predicates[p.toLowerCase()];
+      }
+
+
+      if ( typeof(s) === 'string' ) {
+        if ( s.match(urlre) ) {
+          s = namedNode(s.replace('https://trello.com/c/','#'));
         }
       }
 
-      if (p && o) {
-        if (typeof(o)==='string') {
-          if (o.match(urlre)) {
-            o=namedNode(o.replace('https://trello.com/c/','#'));
+      if ( p && o ) {
+        if ( typeof(o) === 'string' ) {
+          if ( o.match(urlre) ) {
+            o = namedNode(o.replace('https://trello.com/c/','#'));
             //console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
-          }
-          else {
-            o=literal(o)
+          } else {
+            o = literal(o);
             //console.error(`{<${s.id}>,<${p.id}>,"${o}"}`);
           }
         }
@@ -122,15 +125,20 @@ function moment (board_name) {
       }
     }
 
-    let pred='';
-    let text=[''];
-    let list_depth=0;
+    let pred = '';
+    let text = [''];
+    let list_depth = 0;
+    let obj = [];
 
     let json = marked.lexer(desc);
     // Silly way to flush
     json.push({type:'heading','text':'EndQ'});
 
-    json.forEach((item)=>{
+    if ( formattedLocationObj ) {
+      obj = formattedLocationObj;
+    }
+
+    json.forEach(item => {
       //console.error(item);
       switch (item.type) {
       case 'heading':
@@ -154,7 +162,37 @@ function moment (board_name) {
         switch(pred) {
         case "Location":
           if (list_depth===1) {
-            add_spo(node,pred,text[list_depth]);
+            let full_gmap_link = text[list_depth].match(/^https?:\/\/www.google.com\/maps\//);
+            let short_gmap_link = text[list_depth].match(/^https?:\/\/goo.gl\/maps\//);
+            if ( full_gmap_link ) {
+              let locationObj = format_location_data(clean_path(full_gmap_link['input']), full_gmap_link['input']);
+              add(node, schema.spatial, writer.blank([
+                {
+                  predicate: rdf.type,
+                  object: schema.Place
+                },
+                {
+                  predicate: schema.name,
+                  object: literal(locationObj.location)
+                },
+                {
+                  predicate: schema.url,
+                  object: literal(locationObj.url)
+                },
+                {
+                  predicate: schema.longitude,
+                  object: literal(parseFloat(locationObj.lat))
+                },
+                {
+                  predicate: schema.latitude,
+                  object: literal(parseFloat(locationObj.lng))
+                }
+              ]));
+            } else if (short_gmap_link) {
+              add(node, schema.spatial, writer.blank(obj));
+            } else {
+              add_spo(node, pred, text[list_depth]);
+            }
           }
           break;
         case "When":
@@ -187,58 +225,68 @@ function moment (board_name) {
     });
   }
 
-  function add_card(card) {
-    let type=card_type[card.idList];
-//    let attachment_re=new RegExp('https://trello.com/c/(^[/]*)/.*$');
-    let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
-    if (type) {
-      let n=namedNode('#'+card.shortLink);
-      add(n,schema.name,literal(card.name));
-	    add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+  function callback() {
+     writer.end((error, result) => {
+      if ( !error ) {
+        fs.writeFile('result1.ttl', result, (err) => {
+          //console.log('Saved!');
+          console.log(result);
+        });
+      } else {
+        console.log("Error: ", error);
+      }
+    });
+  }
+
+  let itemsProcessed = 0;
+  array.forEach((card, key, array) => {
+    itemsProcessed++;
+    if ( itemsProcessed === array.length ) callback();
+
+    let attachment_re = new RegExp('https://trello.com/c/(.*)/.*$');
+    let type = card_type[array[key].idList];
+
+    if ( type ) {
+      let n = namedNode('#' + array[key].shortLink);
+      add(n,schema.name,literal(array[key].name));
+      add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
       add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
       add(n,rdf.type,type);
-      if (card.idAttachmentCover) {
+      if ( array[key].idAttachmentCover ) {
         //console.error('card.cover');
-        card.attachments.forEach((a)=>{
-          if (a.id === card.idAttachmentCover) {
+        array[key].attachments.forEach(a => {
+          if (a.id === array[key].idAttachmentCover) {
             //console.error('card.cover.add');
-            add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
+            add(n,schema.thumbnail,namedNode(path.join(array[key].shortLink,path.basename(a.url))));
           }
         });
       }
-      if (type===schema.significantLinks) {
+
+      if ( type === schema.significantLinks ) {
         // Now get the labels to use
-        card.labels.forEach((l)=>{
-          let to_from=l.name.split(" / ");
-          if (to_from.length === 2) {
-            let sub=namedNode(card.attachments[1].url.replace(attachment_re,`#$1`));
-            let obj=namedNode(card.attachments[0].url.replace(attachment_re,`#$1`));
+        array[key].labels.forEach(l => {
+          let to_from = l.name.split(" / ");
+          if ( to_from.length === 2 ) {
+            let sub = namedNode(array[key].attachments[1].url.replace(attachment_re,`#$1`));
+            let obj = namedNode(array[key].attachments[0].url.replace(attachment_re,`#$1`));
 
             // Create a unique predicate of type significant Links
             // At a later date, we can add rules to create the reversal
-            let pred=n;
-            if ("desc" in card) {
-              add(n,schema.description,literal(card.desc));
+            let pred = n;
+            if ("desc" in array[key]) {
+              add(n,schema.description,literal(array[key].desc));
             }
 
-            let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
-            
-            //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
-            //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
-            //console.error(`add(${pred.id},schema.name,${to_from[0]})`);
-            //console.error(`add(${sub},${pred.id},${obj})`);
-            // add(pred,rdf.type,schema.significantLinks);
+            let pred_type = namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
+
             add(pred,rdf.type,pred_type);
             add(pred,schema.name,literal(to_from[0]));
             add(sub,pred,obj);
+
             // At a Later Date, we can add in rules for reverse predicates so
             // this wouldn't be necessary
-            let rev_pred=namedNode(n.id+'_rev');
-            let rev_pred_type=namedNode(prefix.ucdlib+to_from[1].replace(/\s+/g,'_'));
-            //console.error(`add(${rev_pred.id},rdf.type,schema.significantLinks)`);
-            //console.error(`add(${rev_pred.id},rdf.type,${rev_pred_type.id})`);
-            //console.error(`add(${rev_pred.id},schema.name,${to_from[0]})`);
-            //console.error(`add(${sub},${rev_pred.id},${obj})`);
+            let rev_pred = namedNode(n.id+'_rev');
+            let rev_pred_type = namedNode(prefix.ucdlib+to_from[1].replace(/\s+/g,'_'));
             add(rev_pred,rdf.type,schema.significantLinks);
             add(rev_pred,rdf.type,rev_pred_type);
             add(rev_pred,schema.name,literal(to_from[1]));
@@ -246,43 +294,141 @@ function moment (board_name) {
           }
         });
       } else {
-        add(n,rdf.type,schema.WebPage);
-        if ("desc" in card) add_desc(n,card.desc);
+        add(n, rdf.type, schema.WebPage);
+        if ( "desc" in array[key] ) {
+
+          if ( array[key]['location'] ) {
+            add_desc(n, array[key].desc, array[key]['location']);
+          } else {
+            add_desc(n, array[key].desc);
+          }
+
+        }
       }
     }
-  }
-
-  let board;
-  // Get json filename
-  let board_fn=path.join(board_name,'board.json')
-
-  try {
-		board=jf.readFileSync(board_fn)
-	} catch (err) {
-		warnl.push(`${board_fn} not found`);
-	}
-
-  set_card_type_from_lists(board.lists);
-  let cards=board.cards;
-
-  cards.forEach((k)=>add_card(k));
-
-  writer.end(function (error, result) { 
-
-    fs.writeFile('result2.ttl', result, (err) => {
-      console.log('Saved!');
-    });
-
-    console.log(result); 
   });
+}
 
-  if (true) {
-	  if ( errl.length>0 || warnl.length>0) {
-		  console.error([cardfile,errl.join(' '),warnl.join(' ')].join(':'));
-	  }
+function clean_path(path) {
+  //let regex = new RegExp(/(^\w+:|^)\/\/([^\/,\s]+\.[^\/,\s]+?)(?=\/|,|\s|$|\?|#)?(\/\w+)?(\/\w+\/)/);
+  path = decodeURIComponent(path.replace(/(^\w+:|^)\/\/([^\/,\s]+\.[^\/,\s]+?)(?=\/|,|\s|$|\?|#)\/(maps)\/(place)\//, ''));
+
+  let array = path.split(/[\/]/).filter(el => el.length > 0);
+  return array;
+}
+
+function format_location_data(array, shortLink) {
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURI
+  let rawLatLng   = array.filter(element => /^@/.test(element));
+  let latLngArray = rawLatLng[0].split(',');
+  let lat = latLngArray[0].slice(1);
+  let lng = latLngArray[1];
+  let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
+
+  let obj = {};
+
+  return obj = {
+    location: locationName,
+    url: shortLink,
+    lat: lat,
+    lng: lng
   }
 }
 
-let argv=yargs.usage('trello2moment --board=[Short URL]').
-    demandOption(['board']).argv;
-moment(argv.board);
+async function find_location(card) {
+  if ( "desc" in card ) {
+    let gmap_link = card.desc.match(/https:\/\/goo.gl\/maps\/([\w]+)/g);
+    if ( gmap_link ) {
+      let options = {
+        uri: gmap_link[0],
+        followRedirect: false,
+        method: 'HEAD'
+      }
+
+      let promise = new Promise((resolve, reject) => {
+        setTimeout(() => {
+          request.get(options, (error, response) => setTimeout(() => {
+            if ( error ) reject(error);
+            else {
+              resolve(response.headers.location);
+            }
+          }, 1000));
+        }, 1000);
+      });
+
+      try {
+        let result = await promise;
+        let locationObj = format_location_data(clean_path(result), gmap_link);
+        card['location'] = [
+          {
+            predicate: rdf.type,
+            object: schema.Place
+          },
+          {
+            predicate: schema.name,
+            object: literal(locationObj.location)
+          },
+          {
+            predicate: schema.url,
+            object: literal(locationObj.url)
+          },
+          {
+            predicate: schema.longitude,
+            object: literal(parseFloat(locationObj.lat))
+          },
+          {
+            predicate: schema.latitude,
+            object: literal(parseFloat(locationObj.lng))
+          }
+        ];
+        return card;
+      } catch (err) {
+        console.log("Error: ", err);
+      }
+    } else {
+      return card;
+    }
+  } else {
+    console.log('No Desc', row);
+  }
+}
+
+function getCards(board_name) {
+  let warnl = [];
+
+  let board;
+  let board_fn = path.join(board_name, 'board.json');
+
+  try {
+    board = jf.readFileSync(board_fn);
+  } catch (error) {
+    warnl.push(`${board_fn} not found`);
+  }
+
+  set_card_type_from_lists(board.lists);
+
+  let cards = board.cards;
+
+  function set_card_type_from_lists(lists) {
+    lists.forEach((l)=>{
+      let m = l.name;
+      if (m==='Connections') {
+        m='significantLinks';
+      }
+      if (m==='Object')
+        m='Thing';
+
+      if (m!=='Card Creation Guides') {
+        if (m && schema[m]) {
+          //console.error(`schema[${m}]`);
+          card_type[l.id]=schema[m];
+        } else {
+          //console.error(`namedNode(${prefix.ucdlib}${m})`);
+          card_type[l.id]=namedNode(prefix.ucdlib+m.replace(/\s+/g,'_'));
+        }
+      }
+    });
+  }
+
+  return cards;
+}
