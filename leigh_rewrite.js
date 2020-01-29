@@ -163,7 +163,7 @@ function add_card(array) {
             let full_gmap_link = text[list_depth].match(/^https?:\/\/www.google.com\/maps\//);
             if ( full_gmap_link ) {
               let locationObj = format_location_data(clean_path(full_gmap_link['input']), full_gmap_link['input']);
-              let b = writer.blank([
+              add(node, schema.spatial, writer.blank([
                 {
                   predicate: rdf.type,
                   object: schema.Place
@@ -184,8 +184,7 @@ function add_card(array) {
                   predicate: schema.latitude,
                   object: literal(parseFloat(locationObj.lng))
                 }
-              ]);
-              add(node, schema.spatial, b);
+              ]));
             } else {
               add(node, schema.spatial, writer.blank(obj));
             }
@@ -356,7 +355,7 @@ async function find_location(card) {
       try {
         let result = await promise;
         let locationObj = format_location_data(clean_path(result), gmap_link);
-        let b = [
+        card['location'] = [
           {
             predicate: rdf.type,
             object: schema.Place
@@ -378,8 +377,7 @@ async function find_location(card) {
             object: literal(parseFloat(locationObj.lng))
           }
         ];
-        card['location'] = b;
-        return card;           
+        return card;     
       } catch (err) {
         console.log("Error: ", err);
       }
