@@ -6,7 +6,7 @@ const jf=require('jsonfile');
 const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
-const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
+const { namedNode, literal, defaultGraph, quad, blank } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
 const traverse = require('traverse');
@@ -110,7 +110,7 @@ function add_card(array) {
           s = namedNode(s.replace('https://trello.com/c/','#'));
         }
       }
-      
+
       if ( p && o ) {
         if ( typeof(o) === 'string' ) {
           if ( o.match(urlre) ) {
@@ -163,6 +163,7 @@ function add_card(array) {
         case "Location":
           if (list_depth===1) {
             let full_gmap_link = text[list_depth].match(/^https?:\/\/www.google.com\/maps\//);
+            let gmap_link = text[list_depth].match(/^https?:\/\/goo.gl\/maps\//);
             if ( full_gmap_link ) {
               let locationObj = format_location_data(clean_path(full_gmap_link['input']), full_gmap_link['input']);
               add(node, schema.spatial, writer.blank([
@@ -187,10 +188,11 @@ function add_card(array) {
                   object: literal(parseFloat(locationObj.lng))
                 }
               ]));
-            } else {
+            } else if (gmap_link) {
               add(node, schema.spatial, writer.blank(obj));
+            } else {
+              add_spo(node, pred, text[list_depth]);
             }
-            add_spo(node, pred, text[list_depth]);
           }
           break;
         case "When":
@@ -220,7 +222,7 @@ function add_card(array) {
       default:
         break;
       }
-    });    
+    });
   }
 
   function callback() {
@@ -229,7 +231,7 @@ function add_card(array) {
         fs.writeFile('result1.ttl', result, (err) => {
           console.log('Saved!');
           //console.log(result);
-        });        
+        });
       } else {
         console.log("Error: ", error);
       }
@@ -260,7 +262,7 @@ function add_card(array) {
         });
       }
 
-      if ( type === schema.significantLinks ) {   
+      if ( type === schema.significantLinks ) {
         // Now get the labels to use
         array[key].labels.forEach(l => {
           let to_from = l.name.split(" / ");
@@ -292,7 +294,7 @@ function add_card(array) {
           }
         });
       } else {
-        add(n, rdf.type, schema.WebPage);        
+        add(n, rdf.type, schema.WebPage);
         if ( "desc" in array[key] ) {
 
           if ( array[key]['location'] ) {
@@ -303,7 +305,7 @@ function add_card(array) {
 
         }
       }
-    }    
+    }
   });
 }
 
@@ -317,12 +319,12 @@ function clean_path(path) {
 
 function format_location_data(array, shortLink) {
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/decodeURI
-  let rawLatLng   = array.filter(element => /^@/.test(element));  
+  let rawLatLng   = array.filter(element => /^@/.test(element));
   let latLngArray = rawLatLng[0].split(',');
   let lat = latLngArray[0].slice(1);
   let lng = latLngArray[1];
   let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
-  
+
   let obj = {};
 
   return obj = {
@@ -333,7 +335,7 @@ function format_location_data(array, shortLink) {
   }
 }
 
-async function find_location(card) {  
+async function find_location(card) {
   if ( "desc" in card ) {
     let gmap_link = card.desc.match(/https:\/\/goo.gl\/maps\/([\w]+)/g);
     if ( gmap_link ) {
@@ -379,11 +381,11 @@ async function find_location(card) {
             object: literal(parseFloat(locationObj.lng))
           }
         ];
-        return card;     
+        return card;
       } catch (err) {
         console.log("Error: ", err);
       }
-    } else { 
+    } else {
       return card;
     }
   } else {
@@ -392,7 +394,7 @@ async function find_location(card) {
 }
 
 function getCards(board_name) {
-  let warnl = []; 
+  let warnl = [];
 
   let board;
   let board_fn = path.join(board_name, 'board.json');
@@ -404,7 +406,7 @@ function getCards(board_name) {
   }
 
   set_card_type_from_lists(board.lists);
-  
+
   let cards = board.cards;
 
   function set_card_type_from_lists(lists) {
@@ -426,7 +428,7 @@ function getCards(board_name) {
         }
       }
     });
-  }  
+  }
 
   return cards;
 }
