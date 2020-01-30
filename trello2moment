@@ -69,15 +69,15 @@ async function moment (board_name) {
   let board_fn=path.join(board_name,'board.json')
 
   try {
-		board=jf.readFileSync(board_fn)
+    board=jf.readFileSync(board_fn);
 	} catch (err) {
     throw err
-	}
+  }
 
-  set_card_type_from_lists(board.lists);
+  set_card_type_from_lists(board.lists);  
   let cards=board.cards;
 
-  for(let k=0;k<cards.length;k++) {
+  for(let k=0;k<cards.length;k++) {    
     await add_card(cards[k]);
   }
 
@@ -87,13 +87,14 @@ async function moment (board_name) {
         if (err) throw err;
       });
     } else {
-      //console.log(result);
+      console.log(result);
     }
   });
 }
 
 function set_card_type_from_lists(lists) {
   lists.forEach((l)=>{
+    if ( l.closed ) return; // don't bother with closed cards
     let m = l.name;
     if (m==='Connections') {
       m='significantLinks';
@@ -101,7 +102,7 @@ function set_card_type_from_lists(lists) {
     if (m==='Object')
       m='Thing';
 
-    if (m!=='Card Creation Guides') {
+    if ( !m.includes('Card Creation Guides')) {      
       if (m && schema[m]) {
         //console.error(`schema[${m}]`);
         card_type[l.id]=schema[m];
@@ -183,6 +184,7 @@ async function format_map_link(map_link) {
   (obj.lat) && b.push({predicate: schema.latitude,object: literal(parseFloat(obj.lat))});
   (obj.lon) && b.push({predicate: schema.longitude,object: literal(parseFloat(obj.lon))});
   (obj.url) && b.push({predicate: schema.url,object: namedNode(obj.url)});
+  
   return b;
 }
 
@@ -251,6 +253,8 @@ async function add_desc(node,desc) {
   }
 
   async function add_card(card) {
+    // Weed out the Template cards & Archived 'closed' cards
+    if ( card['isTemplate'] || card['closed'] ) return;
     let type=card_type[card.idList];
     let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
     if (type) {
