@@ -41,7 +41,7 @@ thumbnails: ${board}/board.json
 
 ${moment}.ttl:${board}/board.json
 	./trello2moment --board=${board} 2>${moment}.err > ${moment}_t.ttl
-	riot --formatted=ttl --base=z: ${moment}_t.ttl  | sed -e 's/<z:/</g' > $@
+	${riot} --formatted=ttl --base=z: ${moment}_t.ttl  | sed -e 's/<z:/</g' > $@
 	rm -f ${moment}_t.ttl
 
 ${moment}.json:
