@@ -45,4 +45,4 @@ ${moment}.ttl:${board}/board.json
 	rm -f ${moment}_t.ttl
 
 ${moment}.json:
-	riot --formatted=jsonld --base=z: ${moment}.ttl | sed 's/z:#//' > $@
+	${riot} --formatted=jsonld --base=z: ${moment}.ttl | sed 's/z:#//' > $@
