@@ -172,7 +172,7 @@ async function format_map_link(map_link) {
   let found=place_link.match(place_re);
   if (found) {
     obj=found.groups;
-    obj.loc = decodeURI(obj.loc);
+    obj.loc = decodeURIComponent(obj.loc);
   } else {
     obj={url:map_link}
   }
