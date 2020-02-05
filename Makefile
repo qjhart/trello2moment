@@ -1,6 +1,9 @@
 #! /usr/bin/make -f
 SHELL:=/bin/bash
 
+# use make riot=path/to/riot if not in your $PATH
+riot:=riot
+
 key:=supply_on_cmd
 token:=supply_token_on_cmd
 
@@ -40,3 +43,6 @@ ${moment}.ttl:${board}/board.json
 	./trello2moment --board=${board} 2>${moment}.err > ${moment}_t.ttl
 	riot --formatted=ttl --base=z: ${moment}_t.ttl  | sed -e 's/<z:/</g' > $@
 	rm -f ${moment}_t.ttl
+
+${moment}.json:
+	riot --formatted=jsonld --base=z: ${moment}.ttl | sed 's/z:#//' > $@
