@@ -7,11 +7,8 @@ riot:=riot
 key:=supply_on_cmd
 token:=supply_token_on_cmd
 
-#board:=NgVOlKPZ
-#moment:=chardonney
-
-board:=K2CNYMZP
-moment:=jop
+board:=pY20Yz5x
+moment:=trello2moment
 
 trello=http https://api.trello.com/1/boards/${board}/ key==${key} token==${token}
 
