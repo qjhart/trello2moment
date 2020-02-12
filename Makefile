@@ -12,15 +12,16 @@ moment:=trello2moment
 
 trello=http https://api.trello.com/1/boards/${board}/ key==${key} token==${token}
 
-import:${board}/board.json
+import:moments/${board}/board.json
 
 files:=$(patsubst %,${board}/%.json,lists cards)
-
 .PHONY:files
 files:${files}
+#$(info $(files)) #print the variable
 
-${board}/board.json:
-	[[ -d ${board} ]] || mkdir ${board};\
+moments/${board}/board.json:
+	[[ -d moments ]] || mkdir moments;\
+	[[ -d ${board} ]] || mkdir moments/${board};\
 	${trello} lists==all cards==all card_attachments==true | jq . > $@
 
 thumbnails: ${board}/board.json

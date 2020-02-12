@@ -50,7 +50,7 @@ Run `echo $key && echo $token`.
 
 #### Create Moment JSON
 
-Run `make key=$key token=$token board=XXX moment=XXX import`.
+Run `make key=$key token=$token board=XXX moment=XXX import` [-B to overwrite old version]
 
 The json should be created inside a directory which will be named after the Trello board's ID.
 
