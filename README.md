@@ -60,7 +60,11 @@ Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
 
 #### Create .TTL File
 
-Run `make key=$key token=$token board=XXX moment=XXX jop.ttl`
+Run `make key=$key token=$token board=XXX moment=XXX XXX.ttl`
+
+#### Create .JSON File
+
+Run `make key=$key token=$token board=XXX moment=XXX XXX.json`
 
 #### Trello2Moment
 
