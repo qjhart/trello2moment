@@ -49,9 +49,9 @@ var schema = {
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-let argv=yargs.usage('trello2moment --board=[Short URL] {--json=file}').
+let argv=yargs.usage('trello2moment --moment=[Short URL] --board=[Short URL] {--json=file}').
     default('json_file',null).
-    demandOption(['board']).argv;
+    demandOption(['moment','board']).argv;
 
 var writer = new N3.Writer({prefixes: prefix});
 
@@ -61,12 +61,12 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(argv.board);
+moment(argv.moment,argv.board);
 
-async function moment (board_name) {
+async function moment (moment_name, board_name) {
   let board;
   // Get json filename
-  let board_fn=path.join(board_name,'board.json')
+  let board_fn=path.join('moments', moment_name, board_name + '.json')
 
   try {
     board=jf.readFileSync(board_fn);

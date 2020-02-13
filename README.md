@@ -50,25 +50,25 @@ Run `echo $key && echo $token`.
 
 #### Create Moment JSON
 
-Run `make key=$key token=$token board=XXX moment=XXX import` [-B to overwrite old version]
+Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME import` [-B to overwrite old version]
 
 The json should be created inside a directory which will be named after the Trello board's ID.
 
 #### Create Thumbnails
 
-Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
+Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME thumbnails`
 
 #### Create .TTL File
 
-Run `make key=$key token=$token board=XXX moment=XXX XXX.ttl`
+Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME BOARD_NAME.ttl`
 
 #### Create .JSON File
 
-Run `make key=$key token=$token board=XXX moment=XXX XXX.json`
+Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME MOMENT_NAME.json`
 
 #### Trello2Moment
 
-Run `node trello2moment --board=BOARD_NAME`
+Run `node trello2moment --moment=MOMENT_NAME --board=BOARD_NAME`
 
 ## LDP
 
