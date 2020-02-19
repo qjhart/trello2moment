@@ -1,7 +1,8 @@
 # File Structure
 # - moments
 #		- cats
-# 		- cats.ttl (New part)
+# ✓		- cats_moment.ttl (the moment description)
+#			- cats.ttl (new part)
 # ✓ 	- pY20Yz5x.json (This is the downloaded board)
 # ✓ 	- pY20Yz5z.ttl ( This is created from trello to moment )
 # ✓ 	- cats 
@@ -48,8 +49,18 @@ thumbnails: moments/${moment}/${board}.json
 
 ${board}.ttl: moments/${moment}/${board}.json
 	./trello2moment --moment=${moment} --board=${board} 2>moments/${moment}/${board}.err > moments/${moment}/${board}_t.ttl
-	${riot} --formatted=ttl --base=z: moments/${moment}/${board}_t.ttl  | sed -e 's/<z:/</g' > moments/${moment}/$@
+	${riot} --formatted=ttl --base=z: moments/${moment}/${board}_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
 	rm -f moments/${moment}/${board}_t.ttl
+
+${moment}_moment.ttl: moments/${moment}/${board}.json
+	./trello2moment --board=${board} --moment=${moment} --description=true 2>moments/${moment}/${moment}_moment.err > moments/${moment}/${moment}_moment_t.ttl
+	${riot} --formatted=ttl --base=z: moments/${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
+	rm -f moments/${moment}/${moment}_moment_t.ttl
+
+${moment}.ttl: moments/${moment}/${board}.json
+	./trello2moment --board=${board} --moment=${moment} 2>moments/${moment}/${moment}.err > moments/${moment}/${moment}_t.ttl
+	${riot} --formatted=ttl --base=z: moments/${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
+	rm -f moments/${moment}/${moment}_t.ttl
 
 ${moment}.json: moments/${moment}/${board}.ttl 
 	[[ -d ${moment} ]] || mkdir moments/${moment}/${moment}; \
