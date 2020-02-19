@@ -76,7 +76,7 @@ Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [MOMENT_NAME
 
 #### Trello2Moment
 
-Run `node trello2moment --moment=MOMENT_NAME --board=BOARD_NAME [--description=true]`
+Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true]`
 
 ## LDP
 

@@ -85,7 +85,7 @@ async function moment (moment_name, board_name, description) {
     // Loop through to add all?
     //console.log(board.prefs.backgroundImageScaled);
     
-    let n = namedNode('#' + moment_name);
+    let n = namedNode('');
     add(n, schema.name, literal(moment_name));
     add(n, schema.publisher, namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n, schema.license, namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
