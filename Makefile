@@ -79,38 +79,38 @@ check::
 import:${board}.json thumbnails
 
 ${board}.json:
-	[[ -d ${moment} ]] || mkdir moments/${moment}; \
-	${trello} lists==all cards==all card_attachments==true | jq . > moments/${moment}/$@
+	[[ -d ${moment} ]] || mkdir ${moment}; \
+	${trello} lists==all cards==all card_attachments==true | jq . > ${moment}/$@
 
-thumbnails: moments/${moment}/${board}.json
-	[[ -d ${moment} ]] || mkdir moments/${moment}/${moment}; \
+thumbnails: ${moment}/${board}.json
+	[[ -d ${moment} ]] || mkdir ${moment}/${moment}; \
 	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
 	  IFS='|' read l a <<<"$$i"; \
 		echo i=$$i l=$$l a=$$a ; \
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
 		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
 	  b=$$(basename $$url); \
-	  [[ -d ${moment}/$$l ]] || mkdir moments/${moment}/${moment}/$$l; \
-		[[ -f ${moment}/$$l/$$b ]] || http $$url > moments/${moment}/${moment}/$$l/$$b; \
+	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/${moment}/$$l; \
+		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/${moment}/$$l/$$b; \
 	  echo "${moment}/$$l/$$b"; \
 	done
 
-${board}.ttl: moments/${moment}/${board}.json
-	./trello2moment --moment=${moment} --board=${board} 2>moments/${moment}/${board}.err > moments/${moment}/${board}_t.ttl
-	${riot} --formatted=ttl --base=z: moments/${moment}/${board}_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
-	rm -f moments/${moment}/${board}_t.ttl
+${board}.ttl: ${moment}/${board}.json
+	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
+	${riot} --formatted=ttl --base=z: ${moment}/${board}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
+	rm -f ${moment}/${board}_t.ttl
 
-${moment}_moment.ttl: moments/${moment}/${board}.json
-	./trello2moment --board=${board} --moment=${moment} --description=true 2>moments/${moment}/${moment}_moment.err > moments/${moment}/${moment}_moment_t.ttl
-	${riot} --formatted=ttl --base=z: moments/${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
-	rm -f moments/${moment}/${moment}_moment_t.ttl
+${moment}_moment.ttl: ${moment}/${board}.json
+	./trello2moment --board=${board} --moment=${moment} --description=true 2>${moment}/${moment}_moment.err > ${moment}/${moment}_moment_t.ttl
+	${riot} --formatted=ttl --base=z: ${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
+	rm -f ${moment}/${moment}_moment_t.ttl
 
-${moment}.ttl: moments/${moment}/${board}.json
-	./trello2moment --board=${board} --moment=${moment} 2>moments/${moment}/${moment}.err > moments/${moment}/${moment}_t.ttl
-	${riot} --formatted=ttl --base=z: moments/${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > moments/${moment}/$@
-	rm -f moments/${moment}/${moment}_t.ttl
+${moment}.ttl: ${moment}/${board}.json
+	./trello2moment --board=${board} --moment=${moment} 2>${moment}/${moment}.err > ${moment}/${moment}_t.ttl
+	${riot} --formatted=ttl --base=z: ${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
+	rm -f ${moment}/${moment}_t.ttl
 
-${moment}.json: moments/${moment}/${board}.ttl
-	[[ -d ${moment} ]] || mkdir moments/${moment}/${moment}; \
-	rm -f moments/${moment}/${moment}/${moment}.json; \
-	${riot} --formatted=jsonld --base=z: moments/${moment}/${board}.ttl | sed 's/z:#//' > moments/${moment}/${moment}/$@
+${moment}.json: ${moment}/${board}.ttl
+	[[ -d ${moment} ]] || mkdir ${moment}/${moment}; \
+	rm -f ${moment}/${moment}/${moment}.json; \
+	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/${moment}/$@
