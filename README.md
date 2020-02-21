@@ -62,7 +62,7 @@ Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME thumbnails`
 
 Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [BOARD_NAME].ttl`
 
-### Create the Moment Descripton .TTL File
+### Create the Moment Description .TTL File
 
 Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [MOMENT_NAME]_moment.ttl`
 

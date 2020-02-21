@@ -11,7 +11,7 @@ define pod
   make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=I<moment_name> <command>
   where command is one of: import ${board}.json thumbnails  ${board}.ttl moment
 
-This Makefile is used create a dams moment from a trello board.  The commands allow for the creation of a number of items needed for the momment
+This Makefile is used to create a dams moment from a trello board.  The commands will create a number of items needed for the moment
 
 =head1 COMMANDS
 
