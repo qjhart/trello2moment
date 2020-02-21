@@ -68,7 +68,7 @@ moment(argv.moment,argv.board,argv.description);
 async function moment (moment_name, board_name, description) {
   let board;
   // Get json filename
-  let board_fn=path.join('moments', moment_name, board_name + '.json')
+  let board_fn=path.join(moment_name, board_name + '.json')
 
   try {
     board=jf.readFileSync(board_fn);

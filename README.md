@@ -60,19 +60,19 @@ Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME thumbnails`
 
 #### Create .TTL File
 
-Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [BOARD_NAME].ttl`
+Run `make [BOARD_NAME].ttl`
 
 ### Create the Moment Description .TTL File
 
-Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [MOMENT_NAME]_moment.ttl`
+Run `make [MOMENT_NAME]_moment.ttl`
 
 ### Create the Moment .TTL File
 
-Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [MOMENT_NAME].ttl`
+Run `make [MOMENT_NAME].ttl`
 
 #### Create .JSON File
 
-Run `make key=$key token=$token board=BOARD_NAME moment=MOMENT_NAME [MOMENT_NAME].json`
+Run `make [MOMENT_NAME].json`
 
 #### Trello2Moment
 

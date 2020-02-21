@@ -83,15 +83,15 @@ ${board}.json:
 	${trello} lists==all cards==all card_attachments==true | jq . > ${moment}/$@
 
 thumbnails: ${moment}/${board}.json
-	[[ -d ${moment} ]] || mkdir ${moment}/${moment}; \
+	[[ -d ${moment} ]] || mkdir ${moment}; \
 	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
 	  IFS='|' read l a <<<"$$i"; \
 		echo i=$$i l=$$l a=$$a ; \
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
 		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
 	  b=$$(basename $$url); \
-	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/${moment}/$$l; \
-		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/${moment}/$$l/$$b; \
+	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
+		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
 	  echo "${moment}/$$l/$$b"; \
 	done
 
@@ -111,6 +111,4 @@ ${moment}.ttl: ${moment}/${board}.json
 	rm -f ${moment}/${moment}_t.ttl
 
 ${moment}.json: ${moment}/${board}.ttl
-	[[ -d ${moment} ]] || mkdir ${moment}/${moment}; \
-	rm -f ${moment}/${moment}/${moment}.json; \
-	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/${moment}/$@
+	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
