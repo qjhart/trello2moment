@@ -6,51 +6,54 @@ define pod
 
 =pod
 
+=head1 NAME 
+
+Trello2Moment - Turn a Trello board into a properly formatted Moment.
+
 =head1 SYNOPSIS
 
-  make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=I<moment_name> <command>
-  where command is one of: import ${board}.json thumbnails  ${board}.ttl moment
+This Makefile is used to create a DAMS Moment from a Trello board.  
+The commands will create a number of items needed for the Moment.
 
-This Makefile is used to create a dams moment from a trello board.  The commands will create a number of items needed for the moment
+C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=I<moment_name> <command> >>>
 
-=head1 COMMANDS
+=head2 File structure
 
-=over 4
+=begin text
 
-=item B<make import>
+	- cats 
+	 - pY20Yz5x.json ( This is the downloaded board )
+	 - pY20Yz5z.ttl ( This is created from Trello2Moment )
+	 - cats.json ( converted from ../pY20Yz5z.ttl with RIOT )
+	 - cats_moment.ttl ( the Moment description )
+	 - cats.ttl ( the Moment )
+	 - Z4444 ( a card )
+	  - image_name.jpg
 
-Imports all the required data from the trello board.  This
+=end text
 
-=back
+=head2 Methods
 
-=head1 OPTIONS
+=item C<${board}.json import>
 
-=over 4
+Imports all the required data from the trello board. 
+Creates the json and the associated card thumbnail images.
 
-=item B<key=I<trello_key>>
+=item C<${board}.ttl>
 
-This is the key for API access to the trello key. You can get this from....
+create board.ttl
 
-=item B<token=I<trello_token>>
+=item C<${moment}_moment.ttl>
 
-This is the token for API access to the trello key. You can get this from....
+create moment description
 
-=back
+=item C<${moment}.ttl>
 
-=head1 FILE STRUCTURE
+create moment.ttl
 
-The following diagram shows an example file structure.
+=item C<${moment}.json>
 
-- moments
-		- cats
-    - cats_moment.ttl (the moment description)
-			- cats.ttl (new part)
-	- pY20Yz5x.json (This is the downloaded board)
-	- pY20Yz5z.ttl ( This is created from trello to moment )
-	- cats
-		- cats.json ( converted from ../pY20Yz5z.ttl with RIOT )
-			- Z4444 (a card)
-					- image_name.jpg
+create moment.json
 
 =cut
 

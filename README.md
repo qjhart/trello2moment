@@ -48,33 +48,7 @@ key=1234 token=abcdef
 
 Run `echo $key && echo $token`.
 
-#### Create Moment JSON
-
-Run `make key=$key token=$token [board=BOARD_NAME] [moment=MOMENT_NAME import]` [-B to overwrite old version]
-
-The json should be created inside a directory which will be named after the Trello board's ID.
-
-#### Create Thumbnails
-
-Run `make [key=$key] [token=$token] [board=BOARD_NAME] [moment=MOMENT_NAME] thumbnails`
-
-#### Create .TTL File
-
-Run `make [BOARD_NAME].ttl`
-
-### Create the Moment Description .TTL File
-
-Run `make [MOMENT_NAME]_moment.ttl`
-
-### Create the Moment .TTL File
-
-Run `make [MOMENT_NAME].ttl`
-
-#### Create .JSON File
-
-Run `make [MOMENT_NAME].json`
-
-#### Trello2Moment
+#### Trello2Moment Usage (w/out Make file)
 
 Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true]`
 
