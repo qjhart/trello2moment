@@ -34,6 +34,7 @@ var schema = {
   WebPage:1,
   Event:1,
   Thing:1,
+  about:1,
   description:1,
   license:1,
   relatedLink:1,
@@ -49,9 +50,10 @@ var schema = {
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-let argv=yargs.usage('trello2moment --board=[Short URL] {--json=file}').
-    default('json_file',null).
-    demandOption(['board']).argv;
+let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--description=false} {--output_file=file}').
+    default('output_file',null).
+    default('description',false).
+    demandOption(['moment','board']).argv;
 
 var writer = new N3.Writer({prefixes: prefix});
 
@@ -61,12 +63,12 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(argv.board);
+moment(argv.moment,argv.board,argv.description);
 
-async function moment (board_name) {
+async function moment (moment_name, board_name, description) {
   let board;
   // Get json filename
-  let board_fn=path.join(board_name,'board.json')
+  let board_fn=path.join(moment_name, board_name + '.json')
 
   try {
     board=jf.readFileSync(board_fn);
@@ -74,16 +76,34 @@ async function moment (board_name) {
     throw err
   }
 
-  set_card_type_from_lists(board.lists);  
-  let cards=board.cards;
+  //  Part of trello2moment, and the file can be saved to : 
+  //    if the command is trello2moment --board=xyz --moment=cats 
+  //    then the file should be ./cats.ttl.  
+  //    And the moment should be cats_moment.ttl
+  if ( description ) {
+    // TODO: more precise background image stuff
+    // Loop through to add all?
+    //console.log(board.prefs.backgroundImageScaled);
+    
+    let n = namedNode('');
+    add(n, schema.name, literal(moment_name));
+    add(n, schema.publisher, namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+    add(n, schema.license, namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
+    add(n, schema.thumbnail, namedNode(board.prefs.backgroundImage));
 
-  for(let k=0;k<cards.length;k++) {    
-    await add_card(cards[k]);
-  }
+    add_desc(n, board.desc);
+  } else {
+    set_card_type_from_lists(board.lists);  
+    let cards=board.cards;
 
-  writer.end(function (error, result) {
-    if (argv.json_file) {
-      fs.writeFile(argv.json_file, result, (err) => {
+    for(let k=0;k<cards.length;k++) {    
+      await add_card(cards[k]);
+    }
+  } 
+
+  writer.end((error, result) => {    
+    if (argv.output_file) {
+      fs.writeFile(argv.output_file, result, (err) => {
         if (err) throw err;
       });
     } else {
@@ -96,11 +116,8 @@ function set_card_type_from_lists(lists) {
   lists.forEach((l)=>{
     if ( l.closed ) return; // don't bother with closed cards
     let m = l.name;
-    if (m==='Connections') {
-      m='significantLinks';
-    }
-    if (m==='Object')
-      m='Thing';
+    if (m==='Connections') m='significantLinks';
+    if (m==='Object') m='Thing';
 
     if ( !m.includes('Card Creation Guides')) {      
       if (m && schema[m]) {
@@ -196,142 +213,151 @@ async function add_desc(node,desc) {
   let json = marked.lexer(desc);
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
+
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
 
     switch (item.type) {
-    case 'heading':
-      if (text[0].length > 1)
-        add_spo(node,schema.description,text[0]);
-      pred = item.text;
-      list_depth = 0;
-      text = [''];
-        break;
-      case 'list_start':
-        list_depth++;
-        text[list_depth] = '';
-        break;
-      case 'list_end':
-        list_depth--;
-        break;
-      case 'list_item_start':
-        break;
-      case 'list_item_end':
-        switch(pred) {
-        case "Location":
-          if (text[list_depth].match(/^http(s):/)) {
-            let b=await format_map_link(text[list_depth]);
-            add(node, schema.spatial, writer.blank(b));
-          } else {
-            add_spo(node,schema.spatial,text[list_depth]);
+      case 'heading':
+        if (text[0].length > 1)
+          add_spo(node,schema.description,text[0]);
+          pred = item.text;
+          list_depth = 0;
+          text = [''];
+          break;
+        case 'list_start':
+          list_depth++;
+          text[list_depth] = '';
+          break;
+        case 'list_end':
+          list_depth--;
+          break;
+        case 'list_item_start':
+          break;
+        case 'list_item_end':
+          switch(pred) {
+            case "About":
+              let reg = new RegExp(/\(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g);
+              if ( text[list_depth].match(reg) ) {
+                add_spo(node, schema.license, text[list_depth]);
+              } else {
+                add_spo(node, schema.about, text[list_depth]);
+              }
+              break;
+            case "Location":
+              if (text[list_depth].match(/^http(s):/)) {
+                let b=await format_map_link(text[list_depth]);
+                add(node, schema.spatial, writer.blank(b));
+              } else {
+                add_spo(node,schema.spatial,text[list_depth]);
+              }
+              break;
+            case "When":
+              add_spo(node,schema.temporal,text[list_depth]);
+              break;
+            case "Links to Learn More":
+              add_spo(node,schema.relatedLink,text[list_depth]);
+              break;
+            default:
+              //console.error(`# ${node},${pred} ${text[1]} #`);
           }
+          text[list_depth]='';
           break;
-        case "When":
-          add_spo(node,schema.temporal,text[list_depth]);
+        case 'text':
+          text[list_depth] += item.text;
           break;
-        case "Links to Learn More":
-            add_spo(node,schema.relatedLink,text[list_depth]);
+        case 'space':
+          text[list_depth] += ' ';
+          break;
+        case 'paragraph':
+          text[list_depth] += item.text;
           break;
         default:
-          //console.error(`# ${node},${pred} ${text[1]} #`);
+          break;
         }
-        text[list_depth]='';
-        break;
-      case 'text':
-        text[list_depth] += item.text;
-        break;
-      case 'space':
-        text[list_depth] += ' ';
-        break;
-      case 'paragraph':
-        text[list_depth] += item.text;
-        break;
-      default:
-        break;
+    }
+}
+
+async function add_card(card) {
+  // Weed out the Template cards & Archived 'closed' cards
+  if ( card['isTemplate'] || card['closed'] ) return;
+  let type=card_type[card.idList];
+  let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
+  if (type) {
+    let n=namedNode('#'+card.shortLink);
+    add(n,schema.name,literal(card.name));
+    add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+    add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
+    add(n,rdf.type,type);
+    if (card.idAttachmentCover) {
+      //console.error('card.cover');
+      card.attachments.forEach((a)=>{
+        if (a.id === card.idAttachmentCover) {
+          //console.error('card.cover.add');
+          add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
+        }
+      });
+    }
+
+    if ( type === schema.significantLinks ) {
+      // Now get the labels to use
+      card.labels.forEach((l)=>{
+        let to_from=l.name.split(" / ");
+        if (to_from.length === 2) {
+          let sub=namedNode(card.attachments[1].url.replace(attachment_re,`#$1`));
+          let obj=namedNode(card.attachments[0].url.replace(attachment_re,`#$1`));
+
+          // Create a unique predicate of type significant Links
+          // At a later date, we can add rules to create the reversal
+          let pred = n;
+          if ("desc" in card) {
+            add(n,schema.description,literal(card.desc));
+          }
+
+          let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
+
+          //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
+          //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
+          //console.error(`add(${pred.id},schema.name,${to_from[0]})`);
+          //console.error(`add(${sub},${pred.id},${obj})`);
+          // add(pred,rdf.type,schema.significantLinks);
+          add(pred,rdf.type,pred_type);
+          add(pred,schema.name,literal(to_from[0]));
+          add(sub,pred,obj);
+          // At a Later Date, we can add in rules for reverse predicates so
+          // this wouldn't be necessary
+          let rev_pred=namedNode(n.id+'_rev');
+          let rev_pred_type=namedNode(prefix.ucdlib+to_from[1].replace(/\s+/g,'_'));
+          //console.error(`add(${rev_pred.id},rdf.type,schema.significantLinks)`);
+          //console.error(`add(${rev_pred.id},rdf.type,${rev_pred_type.id})`);
+          //console.error(`add(${rev_pred.id},schema.name,${to_from[0]})`);
+          //console.error(`add(${sub},${rev_pred.id},${obj})`);
+          add(rev_pred,rdf.type,schema.significantLinks);
+          add(rev_pred,rdf.type,rev_pred_type);
+          add(rev_pred,schema.name,literal(to_from[1]));
+          add(obj,rev_pred,sub);
+        }
+      });
+    } else {
+      add(n,rdf.type,schema.WebPage);
+      if ("desc" in card) {
+        await add_desc(n,card.desc);
       }
     }
   }
+}
 
-  async function add_card(card) {
-    // Weed out the Template cards & Archived 'closed' cards
-    if ( card['isTemplate'] || card['closed'] ) return;
-    let type=card_type[card.idList];
-    let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
-    if (type) {
-      let n=namedNode('#'+card.shortLink);
-      add(n,schema.name,literal(card.name));
-	    add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
-      add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
-      add(n,rdf.type,type);
-      if (card.idAttachmentCover) {
-        //console.error('card.cover');
-        card.attachments.forEach((a)=>{
-          if (a.id === card.idAttachmentCover) {
-            //console.error('card.cover.add');
-            add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
-          }
-        });
-      }
+function format_location_data(map_link) {
+  let place = new RegExp('^https://www.google.com/maps/place/');
+  let path = map_link.replace(place, '');
+  let array = path.split('/').filter(el => el.length > 0);
 
-      if ( type === schema.significantLinks ) {
-        // Now get the labels to use
-        card.labels.forEach((l)=>{
-          let to_from=l.name.split(" / ");
-          if (to_from.length === 2) {
-            let sub=namedNode(card.attachments[1].url.replace(attachment_re,`#$1`));
-            let obj=namedNode(card.attachments[0].url.replace(attachment_re,`#$1`));
+  let ll_re=new RegExp('@?(?<lat>.*),(?<lon>.*)(,\d*z)');
+  let found=array[1].match(ll_re);
+  let obj=found.groups;
+  let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
 
-            // Create a unique predicate of type significant Links
-            // At a later date, we can add rules to create the reversal
-            let pred = n;
-            if ("desc" in card) {
-              add(n,schema.description,literal(card.desc));
-            }
-
-            let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
-
-            //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
-            //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
-            //console.error(`add(${pred.id},schema.name,${to_from[0]})`);
-            //console.error(`add(${sub},${pred.id},${obj})`);
-            // add(pred,rdf.type,schema.significantLinks);
-            add(pred,rdf.type,pred_type);
-            add(pred,schema.name,literal(to_from[0]));
-            add(sub,pred,obj);
-            // At a Later Date, we can add in rules for reverse predicates so
-            // this wouldn't be necessary
-            let rev_pred=namedNode(n.id+'_rev');
-            let rev_pred_type=namedNode(prefix.ucdlib+to_from[1].replace(/\s+/g,'_'));
-            //console.error(`add(${rev_pred.id},rdf.type,schema.significantLinks)`);
-            //console.error(`add(${rev_pred.id},rdf.type,${rev_pred_type.id})`);
-            //console.error(`add(${rev_pred.id},schema.name,${to_from[0]})`);
-            //console.error(`add(${sub},${rev_pred.id},${obj})`);
-            add(rev_pred,rdf.type,schema.significantLinks);
-            add(rev_pred,rdf.type,rev_pred_type);
-            add(rev_pred,schema.name,literal(to_from[1]));
-            add(obj,rev_pred,sub);
-          }
-        });
-      } else {
-        add(n,rdf.type,schema.WebPage);
-        if ("desc" in card) {
-          await add_desc(n,card.desc);
-        }
-      }
-    }
-  }
-
-  function format_location_data(map_link) {
-    let place = new RegExp('^https://www.google.com/maps/place/');
-    let path = map_link.replace(place, '');
-    let array = path.split('/').filter(el => el.length > 0);
-
-    let ll_re=new RegExp('@?(?<lat>.*),(?<lon>.*)(,\d*z)');
-    let found=array[1].match(ll_re);
-    let obj=found.groups;
-    let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
-
-    obj.ul=map_link;
-    obj.location=locationName;
-    return obj;
-  }
+  obj.ul=map_link;
+  obj.location=locationName;
+  return obj;
+}

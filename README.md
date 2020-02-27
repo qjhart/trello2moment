@@ -28,13 +28,13 @@ Make sure the following programs are installed on your system.
 1. [Httpie](https://httpie.org/)
 2. [JQ](https://stedolan.github.io/jq/)
 3. [Apache Jena - Riot](https://jena.apache.org/documentation/io/)
-      - If you installed Jena using Homebrew make sure the path for riot in the Make file is pointing to the correct location to run the riot executable.
+    - If you installed Jena using Homebrew make sure the path for riot in the Make file is pointing to the correct location to run the riot executable.
 
-        **Example**
+      **Example**
 
-        ```bash
-        riot:=/usr/local/Cellar/jena/X.X.X/bin/riot
-        ```
+      ```bash
+      riot:=/usr/local/Cellar/jena/X.X.X/bin/riot
+      ```
 
 #### Store Key and Token as Variables in Terminal Session
 
@@ -48,27 +48,10 @@ key=1234 token=abcdef
 
 Run `echo $key && echo $token`.
 
-#### Create Moment JSON
+#### Trello2Moment Usage (w/out Make file)
 
-Run `make key=$key token=$token board=XXX moment=XXX import`.
+Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true]`
 
-The json should be created inside a directory which will be named after the Trello board's ID.
-
-#### Create Thumbnails
-
-Run `make key=$key token=$token board=XXX moment=XXX thumbnails`
-
-#### Create .TTL File
-
-Run `make key=$key token=$token board=XXX moment=XXX XXX.ttl`
-
-#### Create .JSON File
-
-Run `make key=$key token=$token board=XXX moment=XXX XXX.json`
-
-#### Trello2Moment
-
-Run `node trello2moment --board=BOARD_NAME`
 
 ## LDP
 
