@@ -40,6 +40,7 @@ var schema = {
   relatedLink:1,
   name:1,
   publisher:1,
+  creator:1,
   significantLinks:1,
   spatial:1,
   temporal:1,
@@ -244,6 +245,12 @@ async function add_desc(node,desc) {
                 add_spo(node, schema.about, text[list_depth]);
               }
               break;
+            case "Image Credit":
+              add_spo(node,schema.creator,text[list_depth]);
+              break;
+            case "Learn More":
+              add_spo(node,schema.relatedLink,text[list_depth]);
+              break;
             case "Location":
               if (text[list_depth].match(/^http(s):/)) {
                 let b=await format_map_link(text[list_depth]);
@@ -254,9 +261,6 @@ async function add_desc(node,desc) {
               break;
             case "When":
               add_spo(node,schema.temporal,text[list_depth]);
-              break;
-            case "Links to Learn More":
-              add_spo(node,schema.relatedLink,text[list_depth]);
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
