@@ -270,7 +270,7 @@ async function add_desc(node,desc) {
           text[list_depth] += ' ';
           break;
         case 'paragraph':
-          text[list_depth] += item.text;
+          text[list_depth] += item.text + '\n\n';
           break;
         default:
           break;
