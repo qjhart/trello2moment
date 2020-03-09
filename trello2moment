@@ -259,7 +259,7 @@ async function add_desc(node,desc) {
                 add_spo(node,schema.spatial,text[list_depth]);
               }
               break;
-            case "When":
+            case "Date":
               add_spo(node,schema.temporal,text[list_depth]);
               break;
             default:
@@ -319,6 +319,7 @@ async function add_card(card) {
           }
 
           let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
+
 
           //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
           //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
