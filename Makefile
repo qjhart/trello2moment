@@ -83,7 +83,7 @@ import:${board}.json thumbnails
 
 ${board}.json:
 	[[ -d ${moment} ]] || mkdir ${moment}; \
-	${trello} lists==all cards==all card_attachments==true | jq . > ${moment}/$@
+	${trello} lists==all cards==visible card_attachments==true | jq . > ${moment}/$@
 
 thumbnails: ${moment}/${board}.json
 	[[ -d ${moment} ]] || mkdir ${moment}; \
