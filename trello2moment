@@ -36,6 +36,7 @@ var schema = {
   Thing:1,
   about:1,
   description:1,
+  headline:1,
   license:1,
   relatedLink:1,
   name:1,
@@ -97,7 +98,7 @@ async function moment (moment_name, board_name, description) {
     set_card_type_from_lists(board.lists);  
     let cards=board.cards;
 
-    for(let k=0;k<cards.length;k++) {    
+    for(let k=0;k<cards.length;k++) {
       await add_card(cards[k]);
     }
   } 
@@ -108,7 +109,7 @@ async function moment (moment_name, board_name, description) {
         if (err) throw err;
       });
     } else {
-      console.log(result);
+      //console.log(result);
     }
   });
 }
@@ -215,13 +216,18 @@ async function add_desc(node,desc) {
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
 
+  console.log(json)
+
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
-
     switch (item.type) {
       case 'heading':
         if (text[0].length > 1)
-          add_spo(node,schema.description,text[0]);
+          if (item.text === 'Description') {
+            add_spo(node,schema.headline,text[0]);
+          } else {
+            add_spo(node,schema.description,text[0]);
+          }
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -262,6 +268,9 @@ async function add_desc(node,desc) {
             case "Date":
               add_spo(node,schema.temporal,text[list_depth]);
               break;
+            case "Quote":
+              console.log(text[list_depth])
+              break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
           }
@@ -285,8 +294,8 @@ async function add_desc(node,desc) {
 async function add_card(card) {
   // Weed out the Template cards & Archived 'closed' cards
   if ( card['isTemplate'] || card['closed'] ) return;
-  let type=card_type[card.idList];
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
+  let type=card_type[card.idList];  
   if (type) {
     let n=namedNode('#'+card.shortLink);
     add(n,schema.name,literal(card.name));
