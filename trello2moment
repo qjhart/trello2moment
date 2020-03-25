@@ -27,16 +27,19 @@ var rdf= {
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
 var schema = {
-  CreativeWork:1,
+  CreativeWork:1,  
+  Event:1,
+  ImageObject:1,
+  Thing:1,
   Person:1,
   Place:1,
   VisualArtwork:1,
   WebPage:1,
-  Event:1,
-  Thing:1,
   about:1,
   author:1,
+  caption:1,
   creator:1,
+  contentUrl:1,
   description:1,
   headline:1,
   image:1,
@@ -207,6 +210,25 @@ async function format_map_link(map_link) {
   return b;
 }
 
+function format_image(string) {
+  let obj = {
+    contentUrl: '',
+    caption: ''
+  };
+  if ( string.match(/.(jpe?g|gif|png|tiff|svg)/) ) {
+    obj.contentUrl = string;
+  } else {
+    obj.caption = string;
+  }
+
+  let b=[{ predicate: rdf.type, object: schema.ImageObject }];
+
+  (obj.contentUrl) && b.push({predicate: schema.contentUrl, object: literal(obj.contentUrl)});
+  (obj.caption) && b.push({predicate: schema.caption, object: literal(obj.caption)});
+  
+  return b;
+}
+
 async function add_desc(node,desc) {
   let pred='';
   let text=[''];
@@ -259,10 +281,11 @@ async function add_desc(node,desc) {
               add_spo(node,schema.creator,text[list_depth]);
               break;
             case "Images":
+              //let c = format_image(text[list_depth]);
               if (text[list_depth].match(/.(jpe?g|gif|png|tiff|svg)/)) {
-                add_spo(node,schema.image,text[list_depth]);
+                add_spo(node,schema.contentUrl,text[list_depth]);
               } else {
-                add_spo(node,schema.image,text[list_depth]);
+                add_spo(node,schema.caption,text[list_depth]);
               }
               break;
             case "Learn More":
@@ -311,12 +334,6 @@ async function add_card(card) {
     add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     add(n,rdf.type,type);
-
-    if (card.attachments) {
-      card.attachments.forEach((a)=>{
-        add_spo(n,schema.image,a.name);
-      });
-    }
 
     if (card.idAttachmentCover) {
       //console.error('card.cover');
