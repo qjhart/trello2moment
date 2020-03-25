@@ -34,6 +34,7 @@ var schema = {
   WebPage:1,
   Event:1,
   Thing:1,
+  Quotation:1,
   about:1,
   description:1,
   headline:1,
@@ -86,7 +87,6 @@ async function moment (moment_name, board_name, description) {
     // TODO: more precise background image stuff
     // Loop through to add all?
     //console.log(board.prefs.backgroundImageScaled);
-    
     let n = namedNode('');
     add(n, schema.name, literal(moment_name));
     add(n, schema.publisher, namedNode('http://id.loc.gov/authorities/names/no2008108707'));
@@ -95,9 +95,8 @@ async function moment (moment_name, board_name, description) {
 
     add_desc(n, board.desc);
   } else {
-    set_card_type_from_lists(board.lists);  
+    set_card_type_from_lists(board.lists);
     let cards=board.cards;
-
     for(let k=0;k<cards.length;k++) {
       await add_card(cards[k]);
     }
@@ -109,7 +108,7 @@ async function moment (moment_name, board_name, description) {
         if (err) throw err;
       });
     } else {
-      //console.log(result);
+      console.log(result);
     }
   });
 }
@@ -121,7 +120,7 @@ function set_card_type_from_lists(lists) {
     if (m==='Connections') m='significantLinks';
     if (m==='Object') m='Thing';
 
-    if ( !m.includes('Card Creation Guides')) {      
+    if ( !m.includes('Card Creation Guides')) {
       if (m && schema[m]) {
         //console.error(`schema[${m}]`);
         card_type[l.id]=schema[m];
@@ -161,8 +160,7 @@ function getLink(url) {
   // return new pending promise
   return new Promise((resolve, reject) => {
     const request = https.request(url,{method:'HEAD'},(res) => {
-      //console.log('statusCode:', res.statusCode);
-      //console.log('headers:', res.headers);
+      //headers: res.headers;
       if (res.statusCode != 302) {
         reject(new Error('Unexpected Response: ' + res.statusCode));
       }
@@ -216,18 +214,16 @@ async function add_desc(node,desc) {
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
 
-  console.log(json)
-
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
     switch (item.type) {
-      case 'heading':
+      case 'heading': 
         if (text[0].length > 1)
           if (item.text === 'Description') {
             add_spo(node,schema.headline,text[0]);
           } else {
             add_spo(node,schema.description,text[0]);
-          }
+          }        
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -257,6 +253,9 @@ async function add_desc(node,desc) {
             case "Learn More":
               add_spo(node,schema.relatedLink,text[list_depth]);
               break;
+            case "Source":
+              add_spo(node,schema.Quotation,text[list_depth]);
+              break;
             case "Location":
               if (text[list_depth].match(/^http(s):/)) {
                 let b=await format_map_link(text[list_depth]);
@@ -267,9 +266,6 @@ async function add_desc(node,desc) {
               break;
             case "Date":
               add_spo(node,schema.temporal,text[list_depth]);
-              break;
-            case "Quote":
-              console.log(text[list_depth])
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
@@ -294,6 +290,7 @@ async function add_desc(node,desc) {
 async function add_card(card) {
   // Weed out the Template cards & Archived 'closed' cards
   if ( card['isTemplate'] || card['closed'] ) return;
+
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
   let type=card_type[card.idList];  
   if (type) {
@@ -302,6 +299,11 @@ async function add_card(card) {
     add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     add(n,rdf.type,type);
+
+    if ( card.name === 'Quote' ) {
+      add(n,schema.Quotation,card.name)
+    }
+
     if (card.idAttachmentCover) {
       //console.error('card.cover');
       card.attachments.forEach((a)=>{
@@ -328,8 +330,6 @@ async function add_card(card) {
           }
 
           let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
-
-
           //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
           //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
           //console.error(`add(${pred.id},schema.name,${to_from[0]})`);
