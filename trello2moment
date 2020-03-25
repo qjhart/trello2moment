@@ -34,21 +34,23 @@ var schema = {
   WebPage:1,
   Event:1,
   Thing:1,
-  Quotation:1,
   about:1,
+  author:1,
+  creator:1,
   description:1,
   headline:1,
+  image:1,
   license:1,
+  latitude:1,
+  longitude:1,
   relatedLink:1,
   name:1,
   publisher:1,
-  creator:1,
+  publication:1,
   significantLinks:1,
   spatial:1,
   temporal:1,
   thumbnail:1,
-  latitude:1,
-  longitude:1,
   url:1,
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
@@ -247,14 +249,24 @@ async function add_desc(node,desc) {
                 add_spo(node, schema.about, text[list_depth]);
               }
               break;
+            case "Author":
+              add_spo(node, schema.author, text[list_depth]);
+              break;
+            case "Date":
+              add_spo(node,schema.temporal,text[list_depth]);
+              break;
             case "Image Credit":
               add_spo(node,schema.creator,text[list_depth]);
               break;
+            case "Images":
+              if (text[list_depth].match(/.(jpe?g|gif|png|tiff|svg)/)) {
+                add_spo(node,schema.image,text[list_depth]);
+              } else {
+                add_spo(node,schema.image,text[list_depth]);
+              }
+              break;
             case "Learn More":
               add_spo(node,schema.relatedLink,text[list_depth]);
-              break;
-            case "Source":
-              add_spo(node,schema.Quotation,text[list_depth]);
               break;
             case "Location":
               if (text[list_depth].match(/^http(s):/)) {
@@ -264,8 +276,8 @@ async function add_desc(node,desc) {
                 add_spo(node,schema.spatial,text[list_depth]);
               }
               break;
-            case "Date":
-              add_spo(node,schema.temporal,text[list_depth]);
+            case "Source":
+              add_spo(node, schema.publication, text[list_depth]);
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
@@ -300,8 +312,10 @@ async function add_card(card) {
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     add(n,rdf.type,type);
 
-    if ( card.name === 'Quote' ) {
-      add(n,schema.Quotation,card.name)
+    if (card.attachments) {
+      card.attachments.forEach((a)=>{
+        add_spo(n,schema.image,a.name);
+      });
     }
 
     if (card.idAttachmentCover) {
