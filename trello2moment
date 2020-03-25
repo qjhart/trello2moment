@@ -210,6 +210,20 @@ async function format_map_link(map_link) {
   return b;
 }
 
+function format_image(str) {
+  let b = [{ predicate: rdf.type, object: schema.ImageObject }];
+  let test = str.split('/');
+  for ( let key in test ) {
+    if (test[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
+      b.push({predicate: schema.contentUrl, object: literal(test[key])});
+    } else {
+      b.push({predicate: schema.caption, object: literal(test[key])});
+    }
+  }
+
+  return b;
+}
+
 async function add_desc(node,desc) {
   let pred='';
   let text=[''];
@@ -262,17 +276,8 @@ async function add_desc(node,desc) {
               add_spo(node,schema.creator,text[list_depth]);
               break;
             case "Images":
-              if (text[list_depth].match(/.(jpe?g|gif|png|tiff|svg)/)) {
-                add(node,schema.ImageObject, writer.blank([{
-                  predicate: schema.contentUrl,
-                  object: literal(text[list_depth])
-                }]));
-              } else {
-                add(node,schema.ImageObject, writer.blank([{
-                  predicate: schema.caption,
-                  object: literal(text[list_depth])
-                }]));
-              }
+              let c = format_image(text[list_depth]);
+              add(node,schema.image, writer.blank(c));
               break;
             case "Learn More":
               add_spo(node,schema.relatedLink,text[list_depth]);
