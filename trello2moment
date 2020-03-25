@@ -210,25 +210,6 @@ async function format_map_link(map_link) {
   return b;
 }
 
-function format_image(string) {
-  let obj = {
-    contentUrl: '',
-    caption: ''
-  };
-  if ( string.match(/.(jpe?g|gif|png|tiff|svg)/) ) {
-    obj.contentUrl = string;
-  } else {
-    obj.caption = string;
-  }
-
-  let b=[{ predicate: rdf.type, object: schema.ImageObject }];
-
-  (obj.contentUrl) && b.push({predicate: schema.contentUrl, object: literal(obj.contentUrl)});
-  (obj.caption) && b.push({predicate: schema.caption, object: literal(obj.caption)});
-  
-  return b;
-}
-
 async function add_desc(node,desc) {
   let pred='';
   let text=[''];
@@ -281,11 +262,16 @@ async function add_desc(node,desc) {
               add_spo(node,schema.creator,text[list_depth]);
               break;
             case "Images":
-              //let c = format_image(text[list_depth]);
               if (text[list_depth].match(/.(jpe?g|gif|png|tiff|svg)/)) {
-                add_spo(node,schema.contentUrl,text[list_depth]);
+                add(node,schema.ImageObject, writer.blank([{
+                  predicate: schema.contentUrl,
+                  object: literal(text[list_depth])
+                }]));
               } else {
-                add_spo(node,schema.caption,text[list_depth]);
+                add(node,schema.ImageObject, writer.blank([{
+                  predicate: schema.caption,
+                  object: literal(text[list_depth])
+                }]));
               }
               break;
             case "Learn More":
