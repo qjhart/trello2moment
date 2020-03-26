@@ -113,7 +113,7 @@ async function moment (moment_name, board_name, description) {
         if (err) throw err;
       });
     } else {
-      console.log(result);
+      //console.log(result);
     }
   });
 }
@@ -215,9 +215,9 @@ function format_image(str) {
   let test = str.split('/');
   for ( let key in test ) {
     if (test[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
-      b.push({predicate: schema.contentUrl, object: literal(test[key])});
+      b.push({predicate: schema.contentUrl, object: literal(test[key].trim())});
     } else {
-      b.push({predicate: schema.caption, object: literal(test[key])});
+      b.push({predicate: schema.caption, object: literal(test[key].trim())});
     }
   }
 
@@ -235,6 +235,7 @@ async function add_desc(node,desc) {
 
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
+    console.log(item)
     switch (item.type) {
       case 'heading': 
         if (text[0].length > 1)
@@ -277,7 +278,7 @@ async function add_desc(node,desc) {
               break;
             case "Images":
               let c = format_image(text[list_depth]);
-              add(node,schema.image, writer.blank(c));
+              add(node,schema.image,writer.blank(c));
               break;
             case "Learn More":
               add_spo(node,schema.relatedLink,text[list_depth]);

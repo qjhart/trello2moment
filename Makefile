@@ -87,16 +87,27 @@ ${board}.json:
 
 thumbnails: ${moment}/${board}.json
 	[[ -d ${moment} ]] || mkdir ${moment}; \
-	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
-	  IFS='|' read l a <<<"$$i"; \
-		echo i=$$i l=$$l a=$$a ; \
-	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
+	for i in $$(jq -r '.cards[] | select(.attachments | length > 0) | .shortLink + "/attachments"' $< ) ; do \
+		IFS='|' read a <<<"$$i"; \
+		url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token}); \
 		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
-	  b=$$(basename $$url); \
-	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
-		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
-	  echo "${moment}/$$l/$$b"; \
+		b=$$(basename $$url); \
+		[[ -d ${moment}/$$a ]] || mkdir ${moment}/$$a; \
+		[[ -f ${moment}/$$a/$$b ]] || http $$url > ${moment}/$$a/$$b; \
+		echo "${moment}/$$a/$$b"; \
 	done
+
+#for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
+#	  IFS='|' read l a <<<"$$i"; \
+#		echo i=$$i l=$$l a=$$a ; \
+#	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
+#		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
+#	  b=$$(basename $$url); \
+#	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
+#		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
+#	  echo "${moment}/$$l/$$b"; \
+#	done
+
 
 ${board}.ttl: ${moment}/${board}.json
 	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
