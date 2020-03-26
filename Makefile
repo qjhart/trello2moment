@@ -98,15 +98,15 @@ thumbnails: ${moment}/${board}.json
 	  echo "${moment}/$$l/$$b"; \
 	done
 
-attachments: ${moment}/${board}.json
-	[[ -d ${moment}/attachments ]] || mkdir ${moment}/attachments; \
-	for i in $$(jq -r '.cards[] | select(.cover.idAttachment = null) | select(.attachments[] | length > 0) | .shortLink + "|" + .attachments[].id' $< ) ; do \
+triptych: ${moment}/${board}.json
+	[[ -d ${moment}/triptych ]] || mkdir ${moment}/triptych; \
+	for i in $$(jq -r '.cards[] | select(.name == "Triptych") | .shortLink + "|" + .attachments[].id' $< ) ; do \
 		IFS='|' read l a <<<"$$i"; \
 		echo i=$$i l=$$l a=$$a; \
 		url=$$(http https://api.trello.com/1/cards/$$l/attachments/$$a key==${key} token==${token} | jq -r .url); \
 		b=$$(basename $$url); \
-		[[ -d ${moment}/attachments/$$l ]] || mkdir ${moment}/attachments/$$l; \
-		[[ -f ${moment}/attachments/$$l/$$b ]] || http $$url > ${moment}/attachments/$$l/$$b; \
+		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
+		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
 	done
 
 ${board}.ttl: ${moment}/${board}.json
