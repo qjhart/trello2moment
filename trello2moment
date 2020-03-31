@@ -46,6 +46,7 @@ var schema = {
   license:1,
   latitude:1,
   longitude:1,
+  relatedLinkText:1,
   relatedLink:1,
   name:1,
   publisher:1,
@@ -281,7 +282,11 @@ async function add_desc(node,desc) {
               add(node,schema.image,writer.blank(c));
               break;
             case "Learn More":
-              add_spo(node,schema.relatedLink,text[list_depth]);
+              if ( list_depth === 1 ) {
+                add_spo(node,schema.relatedLink,text[list_depth]);
+              } else {
+                add_spo(node,schema.relatedLinkText,text[list_depth]);
+              }
               break;
             case "Location":
               if (text[list_depth].match(/^http(s):/)) {
