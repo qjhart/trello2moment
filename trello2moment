@@ -53,6 +53,7 @@ var schema = {
   significantLinks:1,
   spatial:1,
   temporal:1,
+  text:1,
   thumbnail:1,
   url:1,
 }
@@ -288,6 +289,13 @@ async function add_desc(node,desc) {
                 add(node, schema.spatial, writer.blank(b));
               } else {
                 add_spo(node,schema.spatial,text[list_depth]);
+              }
+              break;
+            case "Paragraph":
+              if ( list_depth === 1 ) {
+                add_spo(node, schema.headline, text[list_depth]);
+              } else {
+                add_spo(node, schema.text, text[list_depth]);
               }
               break;
             case "Source":
