@@ -283,9 +283,9 @@ async function add_desc(node,desc) {
               break;
             case "Learn More":
               if ( list_depth === 1 ) {
-                add_spo(node,schema.relatedLink,text[list_depth]);
-              } else {
                 add_spo(node,schema.relatedLinkText,text[list_depth]);
+              } else {
+                add_spo(node,schema.relatedLink,text[list_depth]);
               }
               break;
             case "Location":
@@ -302,6 +302,9 @@ async function add_desc(node,desc) {
               } else {
                 add_spo(node, schema.text, text[list_depth]);
               }
+              break;
+            case "Sources":
+              add_spo(node, schema.publication, text[list_depth]);
               break;
             case "Source":
               add_spo(node, schema.publication, text[list_depth]);
