@@ -274,6 +274,9 @@ async function add_desc(node,desc) {
             case "Date":
               add_spo(node,schema.temporal,text[list_depth]);
               break;
+            case "Image Caption":
+              add_spo(node,schema.caption,text[list_depth]);
+              break;
             case "Image Credit":
               add_spo(node,schema.creator,text[list_depth]);
               break;
