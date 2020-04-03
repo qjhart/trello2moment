@@ -46,11 +46,12 @@ var schema = {
   license:1,
   latitude:1,
   longitude:1,
-  relatedLinkText:1,
-  relatedLink:1,
   name:1,
   publisher:1,
   publication:1,
+  relatedLinkText:1,
+  relatedLink:1,
+  story:1,
   significantLinks:1,
   spatial:1,
   temporal:1,
@@ -214,12 +215,12 @@ async function format_map_link(map_link) {
 
 function format_image(str) {
   let b = [{ predicate: rdf.type, object: schema.ImageObject }];
-  let test = str.split('/');
-  for ( let key in test ) {
-    if (test[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
-      b.push({predicate: schema.contentUrl, object: literal(test[key].trim())});
+  let tmpArray = str.split('/');
+  for ( let key in tmpArray ) {
+    if (tmpArray[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
+      b.push({predicate: schema.contentUrl, object: literal(tmpArray[key].trim())});
     } else {
-      b.push({predicate: schema.caption, object: literal(test[key].trim())});
+      b.push({predicate: schema.caption, object: literal(tmpArray[key].trim())});
     }
   }
 
@@ -241,7 +242,7 @@ async function add_desc(node,desc) {
       case 'heading': 
         if (text[0].length > 1)
           if (item.text === 'Description') {
-            add_spo(node,schema.headline,text[0]);
+            add_spo(node,schema.story,text[0]);
           } else {
             add_spo(node,schema.description,text[0]);
           }        
@@ -273,6 +274,9 @@ async function add_desc(node,desc) {
               break;
             case "Date":
               add_spo(node,schema.temporal,text[list_depth]);
+              break;
+            case "Headline":
+              add_spo(node,schema.headline,text[list_depth]);
               break;
             case "Image Caption":
               add_spo(node,schema.caption,text[list_depth]);
@@ -311,6 +315,9 @@ async function add_desc(node,desc) {
               break;
             case "Source":
               add_spo(node, schema.publication, text[list_depth]);
+              break;
+            case "Story":
+              add_spo(node, schema.story, text[list_depth]);
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);

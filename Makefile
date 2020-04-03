@@ -47,13 +47,13 @@ create board.ttl
 
 create moment description
 
-=item C<${moment}.json.ttl>
-
-create moment.json.ttl
-
 =item C<${moment}.json>
 
 create moment.json
+
+=item C<${moment}.json.ttl>
+
+create moment.json.ttl
 
 =cut
 
@@ -119,10 +119,10 @@ ${moment}_moment.ttl: ${moment}/${board}.json
 	${riot} --formatted=ttl --base=z: ${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${moment}_moment_t.ttl
 
+${moment}.json: ${moment}/${board}.ttl
+	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
+
 ${moment}.json.ttl: ${moment}/${board}.json
 	./trello2moment --board=${board} --moment=${moment} 2>${moment}/${moment}.err > ${moment}/${moment}_t.ttl
 	${riot} --formatted=ttl --base=z: ${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${moment}_t.ttl
-
-${moment}.json: ${moment}/${board}.ttl
-	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
