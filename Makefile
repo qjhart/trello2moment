@@ -89,9 +89,9 @@ thumbnails: ${moment}/${board}.json
 	[[ -d ${moment} ]] || mkdir ${moment}; \
 	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" + .cover.idAttachment' $< ); do \
 	  IFS='|' read l a <<<"$$i"; \
-		echo i=$$i l=$$l a=$$a ; \
+			echo i=$$i l=$$l a=$$a ; \
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
-		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
+			echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
 	  b=$$(basename $$url); \
 	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
 		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
@@ -108,6 +108,8 @@ triptych: ${moment}/${board}.json
 		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
 		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
 	done
+
+test:${moment}/*
 
 ${board}.ttl: ${moment}/${board}.json
 	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
