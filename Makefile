@@ -109,7 +109,11 @@ triptych: ${moment}/${board}.json
 		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
 	done
 
-test:${moment}/*
+test: $(wildcard ${moment}/**/*.jpg)
+	for i in $^ ; do \
+		rm -f $$i.ttl ; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images=true; \
+	done
 
 ${board}.ttl: ${moment}/${board}.json
 	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl

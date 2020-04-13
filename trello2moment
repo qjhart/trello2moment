@@ -41,6 +41,7 @@ var schema = {
   creator:1,
   contentUrl:1,
   description:1,
+  encodingFormat:1,
   headline:1,
   image:1,
   license:1,
@@ -61,9 +62,9 @@ var schema = {
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--description=false} {--output_file=file}').
+let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--output_file=file} {--images=false}').
     default('output_file',null).
-    default('description',false).
+    default('images',false).
     demandOption(['moment','board']).argv;
 
 var writer = new N3.Writer({prefixes: prefix});
@@ -74,9 +75,9 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(argv.moment,argv.board,argv.description);
+moment(argv.moment,argv.board,argv.output_file,argv.images);
 
-async function moment (moment_name, board_name, description) {
+async function moment (moment_name, board_name, output_file, images) {
   let board;
   // Get json filename
   let board_fn=path.join(moment_name, board_name + '.json')
@@ -87,25 +88,21 @@ async function moment (moment_name, board_name, description) {
     throw err
   }
 
-  //  Part of trello2moment, and the file can be saved to : 
-  //    if the command is trello2moment --board=xyz --moment=cats 
-  //    then the file should be ./cats.ttl.  
-  //    And the moment should be cats_moment.ttl
-  if ( description ) {
-    // TODO: more precise background image stuff
-    // Loop through to add all?
-    //console.log(board.prefs.backgroundImageScaled);
-    let n = namedNode('');
-    add(n, schema.name, literal(moment_name));
-    add(n, schema.publisher, namedNode('http://id.loc.gov/authorities/names/no2008108707'));
-    add(n, schema.license, namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
-    add(n, schema.thumbnail, namedNode(board.prefs.backgroundImage));
+  let cards = board.cards;
 
-    add_desc(n, board.desc);
+  if (images) {    
+    let _imgName = output_file.split('/');
+    let imgName = _imgName[_imgName.length - 1];    
+    let n = namedNode('');
+    add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+    add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));            
+    add(n,schema.encodingFormat,literal('image/jpeg'));
+    add(n,schema.name,literal(imgName));
   } else {
     set_card_type_from_lists(board.lists);
-    let cards=board.cards;
     for(let k=0;k<cards.length;k++) {
+      // Weed out the Template cards & Archived 'closed' cards
+      if ( cards[k]['isTemplate'] || cards[k]['closed'] ) return;
       await add_card(cards[k]);
     }
   } 
@@ -235,17 +232,13 @@ async function add_desc(node,desc) {
   let json = marked.lexer(desc);
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
-
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
     switch (item.type) {
       case 'heading': 
         if (text[0].length > 1)
-          if (item.text === 'Description') {
-            add_spo(node,schema.story,text[0]);
-          } else {
-            add_spo(node,schema.description,text[0]);
-          }        
+          if (item.text === 'Description') add_spo(node,schema.story,text[0]);
+          else add_spo(node,schema.description,text[0]);      
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -335,16 +328,14 @@ async function add_desc(node,desc) {
           break;
         default:
           break;
-        }
     }
+  }
 }
 
 async function add_card(card) {
-  // Weed out the Template cards & Archived 'closed' cards
-  if ( card['isTemplate'] || card['closed'] ) return;
-
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
-  let type=card_type[card.idList];  
+  let type=card_type[card.idList];
+  
   if (type) {
     let n=namedNode('#'+card.shortLink);
     add(n,schema.name,literal(card.name));
@@ -407,19 +398,4 @@ async function add_card(card) {
       }
     }
   }
-}
-
-function format_location_data(map_link) {
-  let place = new RegExp('^https://www.google.com/maps/place/');
-  let path = map_link.replace(place, '');
-  let array = path.split('/').filter(el => el.length > 0);
-
-  let ll_re=new RegExp('@?(?<lat>.*),(?<lon>.*)(,\d*z)');
-  let found=array[1].match(ll_re);
-  let obj=found.groups;
-  let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
-
-  obj.ul=map_link;
-  obj.location=locationName;
-  return obj;
 }
