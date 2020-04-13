@@ -92,11 +92,12 @@ async function moment (moment_name, board_name, output_file, images) {
 
   if (images) {    
     let _imgName = output_file.split('/');
-    let imgName = _imgName[_imgName.length - 1];    
+    let imgName  = _imgName[_imgName.length - 1];
+    let encType  = imgName.split('.')[1];
     let n = namedNode('');
     add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));            
-    add(n,schema.encodingFormat,literal('image/jpeg'));
+    add(n,schema.encodingFormat,literal('image/' + encType));
     add(n,schema.name,literal(imgName));
   } else {
     set_card_type_from_lists(board.lists);
