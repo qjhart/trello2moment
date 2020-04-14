@@ -27,32 +27,44 @@ var rdf= {
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
 var schema = {
-  CreativeWork:1,
+  CreativeWork:1,  
+  Event:1,
+  ImageObject:1,
+  Thing:1,
   Person:1,
   Place:1,
   VisualArtwork:1,
   WebPage:1,
-  Event:1,
-  Thing:1,
   about:1,
+  author:1,
+  caption:1,
+  creator:1,
+  contentUrl:1,
   description:1,
+  encodingFormat:1,
+  headline:1,
+  image:1,
   license:1,
-  relatedLink:1,
+  latitude:1,
+  longitude:1,
   name:1,
   publisher:1,
+  publication:1,
+  relatedLinkText:1,
+  relatedLink:1,
+  story:1,
   significantLinks:1,
   spatial:1,
   temporal:1,
+  text:1,
   thumbnail:1,
-  latitude:1,
-  longitude:1,
   url:1,
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--description=false} {--output_file=file}').
+let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--output_file=file} {--images=false}').
     default('output_file',null).
-    default('description',false).
+    default('images',false).
     demandOption(['moment','board']).argv;
 
 var writer = new N3.Writer({prefixes: prefix});
@@ -63,9 +75,9 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(argv.moment,argv.board,argv.description);
+moment(argv.moment,argv.board,argv.output_file,argv.images);
 
-async function moment (moment_name, board_name, description) {
+async function moment (moment_name, board_name, output_file, images) {
   let board;
   // Get json filename
   let board_fn=path.join(moment_name, board_name + '.json')
@@ -76,27 +88,22 @@ async function moment (moment_name, board_name, description) {
     throw err
   }
 
-  //  Part of trello2moment, and the file can be saved to : 
-  //    if the command is trello2moment --board=xyz --moment=cats 
-  //    then the file should be ./cats.ttl.  
-  //    And the moment should be cats_moment.ttl
-  if ( description ) {
-    // TODO: more precise background image stuff
-    // Loop through to add all?
-    //console.log(board.prefs.backgroundImageScaled);
-    
+  let cards = board.cards;
+
+  if (images) {    
+    let _imgName = output_file.split('/');
+    let imgName  = _imgName[_imgName.length - 1];
+    let encType  = imgName.split('.')[1];
     let n = namedNode('');
-    add(n, schema.name, literal(moment_name));
-    add(n, schema.publisher, namedNode('http://id.loc.gov/authorities/names/no2008108707'));
-    add(n, schema.license, namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
-    add(n, schema.thumbnail, namedNode(board.prefs.backgroundImage));
-
-    add_desc(n, board.desc);
+    add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+    add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));            
+    add(n,schema.encodingFormat,literal('image/' + encType));
+    add(n,schema.name,literal(imgName));
   } else {
-    set_card_type_from_lists(board.lists);  
-    let cards=board.cards;
-
-    for(let k=0;k<cards.length;k++) {    
+    set_card_type_from_lists(board.lists);
+    for(let k=0;k<cards.length;k++) {
+      // Weed out the Template cards & Archived 'closed' cards
+      if ( cards[k]['isTemplate'] || cards[k]['closed'] ) return;
       await add_card(cards[k]);
     }
   } 
@@ -119,7 +126,7 @@ function set_card_type_from_lists(lists) {
     if (m==='Connections') m='significantLinks';
     if (m==='Object') m='Thing';
 
-    if ( !m.includes('Card Creation Guides')) {      
+    if ( !m.includes('Card Creation Guides')) {
       if (m && schema[m]) {
         //console.error(`schema[${m}]`);
         card_type[l.id]=schema[m];
@@ -159,8 +166,7 @@ function getLink(url) {
   // return new pending promise
   return new Promise((resolve, reject) => {
     const request = https.request(url,{method:'HEAD'},(res) => {
-      //console.log('statusCode:', res.statusCode);
-      //console.log('headers:', res.headers);
+      //headers: res.headers;
       if (res.statusCode != 302) {
         reject(new Error('Unexpected Response: ' + res.statusCode));
       }
@@ -205,6 +211,20 @@ async function format_map_link(map_link) {
   return b;
 }
 
+function format_image(str) {
+  let b = [{ predicate: rdf.type, object: schema.ImageObject }];
+  let tmpArray = str.split('/');
+  for ( let key in tmpArray ) {
+    if (tmpArray[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
+      b.push({predicate: schema.contentUrl, object: literal(tmpArray[key].trim())});
+    } else {
+      b.push({predicate: schema.caption, object: literal(tmpArray[key].trim())});
+    }
+  }
+
+  return b;
+}
+
 async function add_desc(node,desc) {
   let pred='';
   let text=[''];
@@ -213,14 +233,13 @@ async function add_desc(node,desc) {
   let json = marked.lexer(desc);
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
-
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
-
     switch (item.type) {
-      case 'heading':
+      case 'heading': 
         if (text[0].length > 1)
-          add_spo(node,schema.description,text[0]);
+          if (item.text === 'Description') add_spo(node,schema.story,text[0]);
+          else add_spo(node,schema.description,text[0]);      
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -244,6 +263,32 @@ async function add_desc(node,desc) {
                 add_spo(node, schema.about, text[list_depth]);
               }
               break;
+            case "Author":
+              add_spo(node, schema.author, text[list_depth]);
+              break;
+            case "Date":
+              add_spo(node,schema.temporal,text[list_depth]);
+              break;
+            case "Headline":
+              add_spo(node,schema.headline,text[list_depth]);
+              break;
+            case "Image Caption":
+              add_spo(node,schema.caption,text[list_depth]);
+              break;
+            case "Image Credit":
+              add_spo(node,schema.creator,text[list_depth]);
+              break;
+            case "Images":
+              let c = format_image(text[list_depth]);
+              add(node,schema.image,writer.blank(c));
+              break;
+            case "Learn More":
+              if ( list_depth === 1 ) {
+                add_spo(node,schema.relatedLinkText,text[list_depth]);
+              } else {
+                add_spo(node,schema.relatedLink,text[list_depth]);
+              }
+              break;
             case "Location":
               if (text[list_depth].match(/^http(s):/)) {
                 let b=await format_map_link(text[list_depth]);
@@ -252,11 +297,21 @@ async function add_desc(node,desc) {
                 add_spo(node,schema.spatial,text[list_depth]);
               }
               break;
-            case "When":
-              add_spo(node,schema.temporal,text[list_depth]);
+            case "Paragraph":
+              if ( list_depth === 1 ) {
+                add_spo(node, schema.headline, text[list_depth]);
+              } else {
+                add_spo(node, schema.text, text[list_depth]);
+              }
               break;
-            case "Links to Learn More":
-              add_spo(node,schema.relatedLink,text[list_depth]);
+            case "Sources":
+              add_spo(node, schema.publication, text[list_depth]);
+              break;
+            case "Source":
+              add_spo(node, schema.publication, text[list_depth]);
+              break;
+            case "Story":
+              add_spo(node, schema.story, text[list_depth]);
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
@@ -270,25 +325,25 @@ async function add_desc(node,desc) {
           text[list_depth] += ' ';
           break;
         case 'paragraph':
-          text[list_depth] += item.text;
+          text[list_depth] += item.text + '\n\n';
           break;
         default:
           break;
-        }
     }
+  }
 }
 
 async function add_card(card) {
-  // Weed out the Template cards & Archived 'closed' cards
-  if ( card['isTemplate'] || card['closed'] ) return;
-  let type=card_type[card.idList];
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
+  let type=card_type[card.idList];
+  
   if (type) {
     let n=namedNode('#'+card.shortLink);
     add(n,schema.name,literal(card.name));
     add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     add(n,rdf.type,type);
+
     if (card.idAttachmentCover) {
       //console.error('card.cover');
       card.attachments.forEach((a)=>{
@@ -315,7 +370,6 @@ async function add_card(card) {
           }
 
           let pred_type=namedNode(prefix.ucdlib+to_from[0].replace(/\s+/g,'_'));
-
           //console.error(`add(${pred.id},rdf.type,schema.significantLinks)`);
           //console.error(`add(${pred.id},rdf.type,${pred_type.id})`);
           //console.error(`add(${pred.id},schema.name,${to_from[0]})`);
@@ -345,19 +399,4 @@ async function add_card(card) {
       }
     }
   }
-}
-
-function format_location_data(map_link) {
-  let place = new RegExp('^https://www.google.com/maps/place/');
-  let path = map_link.replace(place, '');
-  let array = path.split('/').filter(el => el.length > 0);
-
-  let ll_re=new RegExp('@?(?<lat>.*),(?<lon>.*)(,\d*z)');
-  let found=array[1].match(ll_re);
-  let obj=found.groups;
-  let locationName = array[0].replace(/(\+)/gi, ' ').replace(/(\%)/gi, '\u00B0');
-
-  obj.ul=map_link;
-  obj.location=locationName;
-  return obj;
 }

@@ -47,13 +47,13 @@ create board.ttl
 
 create moment description
 
-=item C<${moment}.ttl>
-
-create moment.ttl
-
 =item C<${moment}.json>
 
 create moment.json
+
+=item C<${moment}.json.ttl>
+
+create moment.json.ttl
 
 =cut
 
@@ -83,19 +83,37 @@ import:${board}.json thumbnails
 
 ${board}.json:
 	[[ -d ${moment} ]] || mkdir ${moment}; \
-	${trello} lists==all cards==all card_attachments==true | jq . > ${moment}/$@
+	${trello} lists==all cards==visible card_attachments==true | jq . > ${moment}/$@
 
 thumbnails: ${moment}/${board}.json
 	[[ -d ${moment} ]] || mkdir ${moment}; \
-	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" +  .cover.idAttachment' $< ); do \
+	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" + .cover.idAttachment' $< ); do \
 	  IFS='|' read l a <<<"$$i"; \
-		echo i=$$i l=$$l a=$$a ; \
+			echo i=$$i l=$$l a=$$a ; \
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
-		echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
+			echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
 	  b=$$(basename $$url); \
 	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
 		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
 	  echo "${moment}/$$l/$$b"; \
+	done
+
+triptych: ${moment}/${board}.json
+	[[ -d ${moment}/triptych ]] || mkdir ${moment}/triptych; \
+	for i in $$(jq -r '.cards[] | select(.name == "Triptych") | .shortLink + "|" + .attachments[].id' $< ) ; do \
+		IFS='|' read l a <<<"$$i"; \
+		echo i=$$i l=$$l a=$$a; \
+		url=$$(http https://api.trello.com/1/cards/$$l/attachments/$$a key==${key} token==${token} | jq -r .url); \
+		b=$$(basename $$url); \
+		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
+		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
+	done
+
+images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
+	for i in $^ ; do \
+		echo $$i ; \
+		rm -f $$i.ttl ; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images=true; \
 	done
 
 ${board}.ttl: ${moment}/${board}.json
@@ -108,10 +126,10 @@ ${moment}_moment.ttl: ${moment}/${board}.json
 	${riot} --formatted=ttl --base=z: ${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${moment}_moment_t.ttl
 
-${moment}.ttl: ${moment}/${board}.json
+${moment}.json: ${moment}/${board}.ttl
+	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
+
+${moment}.json.ttl: ${moment}/${board}.json
 	./trello2moment --board=${board} --moment=${moment} 2>${moment}/${moment}.err > ${moment}/${moment}_t.ttl
 	${riot} --formatted=ttl --base=z: ${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${moment}_t.ttl
-
-${moment}.json: ${moment}/${board}.ttl
-	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
