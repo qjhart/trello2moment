@@ -43,10 +43,6 @@ Creates the json and the associated card thumbnail images.
 
 create board.ttl
 
-=item C<${moment}_moment.ttl>
-
-create moment description
-
 =item C<${moment}.json>
 
 create moment.json
