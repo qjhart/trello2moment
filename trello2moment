@@ -44,6 +44,7 @@ var schema = {
   encodingFormat:1,
   headline:1,
   image:1,
+  label:1,
   license:1,
   latitude:1,
   longitude:1,
@@ -90,7 +91,7 @@ async function moment (moment_name, board_name, output_file, images) {
 
   let cards = board.cards;
 
-  if (images) {    
+  if (images) {
     let _imgName = output_file.split('/');
     let imgName  = _imgName[_imgName.length - 1];
     let encType  = imgName.split('.')[1];
@@ -102,8 +103,6 @@ async function moment (moment_name, board_name, output_file, images) {
   } else {
     set_card_type_from_lists(board.lists);
     for(let k=0;k<cards.length;k++) {
-      // Weed out the Template cards & Archived 'closed' cards
-      if ( cards[k]['isTemplate'] || cards[k]['closed'] ) return;
       await add_card(cards[k]);
     }
   } 
@@ -263,7 +262,7 @@ async function add_desc(node,desc) {
                 add_spo(node, schema.about, text[list_depth]);
               }
               break;
-            case "Author":
+            case "Attribution":
               add_spo(node, schema.author, text[list_depth]);
               break;
             case "Date":
@@ -271,6 +270,9 @@ async function add_desc(node,desc) {
               break;
             case "Headline":
               add_spo(node,schema.headline,text[list_depth]);
+              break;
+            case "Identifier":
+              add_spo(node, schema.story, text[list_depth]);
               break;
             case "Image Caption":
               add_spo(node,schema.caption,text[list_depth]);
@@ -310,9 +312,6 @@ async function add_desc(node,desc) {
             case "Source":
               add_spo(node, schema.publication, text[list_depth]);
               break;
-            case "Story":
-              add_spo(node, schema.story, text[list_depth]);
-              break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
           }
@@ -334,6 +333,9 @@ async function add_desc(node,desc) {
 }
 
 async function add_card(card) {
+  // Weed out the Template cards & Archived 'closed' cards
+  if ( card['isTemplate'] || card['closed'] ) return;
+
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
   let type=card_type[card.idList];
   
@@ -393,6 +395,10 @@ async function add_card(card) {
         }
       });
     } else {
+      // Now get the labels to use
+      card.labels.forEach((l)=>{
+        add(n,schema.label,literal(l.name));
+      });
       add(n,rdf.type,schema.WebPage);
       if ("desc" in card) {
         await add_desc(n,card.desc);

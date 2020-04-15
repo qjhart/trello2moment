@@ -75,7 +75,7 @@ INFO::
 check::
 	@podchecker ${MAKEFILE_LIST}
 
-import:${board}.json thumbnails
+import:${board}.json thumbnails triptych images
 
 ${board}.json:
 	[[ -d ${moment} ]] || mkdir ${moment}; \

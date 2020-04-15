@@ -50,7 +50,7 @@ Run `echo $key && echo $token`.
 
 #### Trello2Moment Usage (w/out Make file)
 
-Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true]`
+Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true] [--images=true]`
 
 ## LDP
 
