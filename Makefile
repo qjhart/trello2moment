@@ -25,7 +25,6 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 	 - pY20Yz5x.json ( This is the downloaded board )
 	 - pY20Yz5z.ttl ( This is created from Trello2Moment )
 	 - cats.json ( converted from ../pY20Yz5z.ttl with RIOT )
-	 - cats_moment.ttl ( the Moment description )
 	 - cats.ttl ( the Moment )
 	 - Z4444 ( a card )
 	  - image_name.jpg
@@ -116,16 +115,14 @@ ${board}.ttl: ${moment}/${board}.json
 	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
 	${riot} --formatted=ttl --base=z: ${moment}/${board}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${board}_t.ttl
-
-${moment}_moment.ttl: ${moment}/${board}.json
-	./trello2moment --board=${board} --moment=${moment} --description=true 2>${moment}/${moment}_moment.err > ${moment}/${moment}_moment_t.ttl
-	${riot} --formatted=ttl --base=z: ${moment}/${moment}_moment_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
-	rm -f ${moment}/${moment}_moment_t.ttl
+	rm -f ${moment}/${board}.err
 
 ${moment}.json: ${moment}/${board}.ttl
 	${riot} --formatted=jsonld --base=z: ${moment}/${board}.ttl | sed 's/z:#//' > ${moment}/$@
+	rm -f ${moment}/${moment}.err
 
 ${moment}.json.ttl: ${moment}/${board}.json
 	./trello2moment --board=${board} --moment=${moment} 2>${moment}/${moment}.err > ${moment}/${moment}_t.ttl
 	${riot} --formatted=ttl --base=z: ${moment}/${moment}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${moment}_t.ttl
+	rm -f ${moment}/${moment}.err

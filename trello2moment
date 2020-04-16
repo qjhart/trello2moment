@@ -299,18 +299,18 @@ async function add_desc(node,desc) {
                 add_spo(node,schema.spatial,text[list_depth]);
               }
               break;
-            case "Paragraph":
-              if ( list_depth === 1 ) {
-                add_spo(node, schema.headline, text[list_depth]);
-              } else {
-                add_spo(node, schema.text, text[list_depth]);
-              }
-              break;
             case "Sources":
               add_spo(node, schema.publication, text[list_depth]);
               break;
             case "Source":
               add_spo(node, schema.publication, text[list_depth]);
+              break;
+            case "Text":
+              if ( list_depth === 1 ) {
+                add_spo(node, schema.headline, text[list_depth]);
+              } else {
+                add_spo(node, schema.text, text[list_depth]);
+              }
               break;
             default:
               //console.error(`# ${node},${pred} ${text[1]} #`);
