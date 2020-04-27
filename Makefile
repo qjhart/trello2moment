@@ -97,11 +97,12 @@ triptych: ${moment}/${board}.json
 	[[ -d ${moment}/triptych ]] || mkdir ${moment}/triptych; \
 	for i in $$(jq -r '.cards[] | select(.name == "Triptych") | .shortLink + "|" + .attachments[].id' $< ) ; do \
 		IFS='|' read l a <<<"$$i"; \
-		echo i=$$i l=$$l a=$$a; \
 		url=$$(http https://api.trello.com/1/cards/$$l/attachments/$$a key==${key} token==${token} | jq -r .url); \
-		b=$$(basename $$url); \
-		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
-		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
+		b=$$(basename $$url) ; \
+		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l ; \
+		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b ; \
+		rm -f ${moment}/triptych/$$l/$$b.ttl ; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=${moment}/triptych/$$l/$$b.ttl --images=true ; \
 	done
 
 images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
