@@ -38,6 +38,10 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 Imports all the required data from the trello board. 
 Creates the json and the associated card thumbnail images.
 
+=item C<images>
+
+Creates the TTLs associated w/each image.
+
 =item C<${board}.ttl>
 
 create board.ttl
@@ -74,7 +78,7 @@ INFO::
 check::
 	@podchecker ${MAKEFILE_LIST}
 
-import:${board}.json thumbnails triptych images
+import:${board}.json thumbnails triptych
 
 ${board}.json:
 	[[ -d ${moment} ]] || mkdir ${moment}; \

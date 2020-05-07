@@ -186,7 +186,7 @@ async function format_map_link(map_link) {
   let place_link;
   if (map_link.match(googl_map_re)) {
     place_link=await getLink(map_link)
-    // console.error(`getLink ${map_link} -> ${place_link}`)
+    //console.error(`getLink ${map_link} -> ${place_link}`)
   } else {
     place_link=map_link
   }
@@ -288,7 +288,13 @@ async function add_desc(node,desc) {
               if ( list_depth === 1 ) {
                 add_spo(node,schema.relatedLinkText,text[list_depth]);
               } else {
-                add_spo(node,schema.relatedLink,text[list_depth]);
+                let link = text[list_depth];
+                if ( text[list_depth].match(/(http(s?)):\/\//i) === null ) {
+                  link = 'https://' + text[list_depth];
+                } else {
+                  link = text[list_depth];
+                }
+                add_spo(node,schema.relatedLink,link);
               }
               break;
             case "Location":
