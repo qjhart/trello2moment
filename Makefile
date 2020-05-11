@@ -92,6 +92,8 @@ thumbnails: ${moment}/${board}.json
 	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
 			echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
 	  b=$$(basename $$url); \
+	  url_enc="$${b//+ }"; \
+	  b=$$(printf '%b' "$${url_enc//%/\\x}"); \
 	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
 		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
 	  echo "${moment}/$$l/$$b"; \
