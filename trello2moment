@@ -357,7 +357,7 @@ async function add_card(card) {
       card.attachments.forEach((a)=>{
         if (a.id === card.idAttachmentCover) {
           //console.error('card.cover.add');
-          add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
+          add(n,schema.thumbnail,namedNode(decodeURIComponent(path.join(card.shortLink,path.basename(a.url)))));
         }
       });
     }
