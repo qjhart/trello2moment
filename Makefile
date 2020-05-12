@@ -6,13 +6,13 @@ define pod
 
 =pod
 
-=head1 NAME 
+=head1 NAME
 
 Trello2Moment - Turn a Trello board into a properly formatted Moment.
 
 =head1 SYNOPSIS
 
-This Makefile is used to create a DAMS Moment from a Trello board.  
+This Makefile is used to create a DAMS Moment from a Trello board.
 The commands will create a number of items needed for the Moment.
 
 C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=I<moment_name> <command> >>>
@@ -21,7 +21,7 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 
 =begin text
 
-	- cats 
+	- cats
 	 - pY20Yz5x.json ( This is the downloaded board )
 	 - pY20Yz5z.ttl ( This is created from Trello2Moment )
 	 - cats.json ( converted from ../pY20Yz5z.ttl with RIOT )
@@ -36,7 +36,7 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 
 =item C<${board}.json import>
 
-Imports all the required data from the trello board. 
+Imports all the required data from the trello board.
 Creates the json and the associated card thumbnail images.
 
 =item C<${board}.ttl>
@@ -113,7 +113,7 @@ images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
 	for i in $^ ; do \
 		echo $$i ; \
 		rm -f $$i.ttl ; \
-		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images=true; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images; \
 	done
 
 ${board}.ttl: ${moment}/${board}.json
