@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 'use strict';
 
-const yargs=require('yargs');
+const { program } = require('commander');
 const jf=require('jsonfile');
 const fs=require('fs');
 const path=require('path');
@@ -29,7 +29,7 @@ Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
 var schema = {
   BasicContainer:1,
-  CreativeWork:1,  
+  CreativeWork:1,
   Event:1,
   ImageObject:1,
   Thing:1,
@@ -65,10 +65,16 @@ var schema = {
 }
 Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 
-let argv=yargs.usage('trello2moment --moment=[Moment Name] --board=[Short URL] {--output_file=file} {--images=false}').
-    default('output_file',null).
-    default('images',false).
-    demandOption(['moment','board']).argv;
+
+program
+		.version('0.5.0')
+		.description('Convert a Trello board into a UCDavis library moment linked dataset.')
+		.option('-o, --output_file <output_file>','JSON output (default {moment}/moment.json)',null)
+    .option('-i, --images','create board images',false)
+		.requiredOption('-m, --moment <moment>','To moment name')
+		.requiredOption('-b, --board <trello_board>','From Trello Short URL name')
+
+program.parse(process.argv);
 
 var writer = new N3.Writer({prefixes: prefix});
 
@@ -78,7 +84,7 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(argv.moment,argv.board,argv.output_file,argv.images);
+moment(program.moment,program.board,program.output_file,program.images);
 
 async function moment (moment_name, board_name, output_file, images) {
   let board;
@@ -111,11 +117,11 @@ async function moment (moment_name, board_name, output_file, images) {
     for(let k=0;k<cards.length;k++) {
       await add_card(cards[k]);
     }
-  } 
+  }
 
-  writer.end((error, result) => {    
-    if (argv.output_file) {
-      fs.writeFile(argv.output_file, result, (err) => {
+  writer.end((error, result) => {
+    if (program.output_file) {
+      fs.writeFile(program.output_file, result, (err) => {
         if (err) throw err;
       });
     } else {
@@ -205,14 +211,14 @@ async function format_map_link(map_link) {
     obj={url:map_link}
   }
   let b=[{ predicate: rdf.type, object: schema.Place }];
-  
+
   if ( obj.loc ) //console.log(obj.loc); // Check to make sure decoded properly
-  
+
   (obj.loc) && b.push({predicate: schema.name,object: literal(obj.loc)});
   (obj.lat) && b.push({predicate: schema.latitude,object: literal(parseFloat(obj.lat))});
   (obj.lon) && b.push({predicate: schema.longitude,object: literal(parseFloat(obj.lon))});
   (obj.url) && b.push({predicate: schema.url,object: namedNode(obj.url)});
-  
+
   return b;
 }
 
@@ -241,10 +247,10 @@ async function add_desc(node,desc) {
   for ( let i=0; i<json.length; i++) {
     let item=json[i];
     switch (item.type) {
-      case 'heading': 
+      case 'heading':
         if (text[0].length > 1)
           if (item.text === 'Description') add_spo(node,schema.story,text[0]);
-          else add_spo(node,schema.description,text[0]);      
+          else add_spo(node,schema.description,text[0]);
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -350,7 +356,7 @@ async function add_card(card) {
 
   let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
   let type=card_type[card.idList];
-  
+
   if (type) {
     let n=namedNode('#'+card.shortLink);
     add(n,schema.name,literal(card.name));

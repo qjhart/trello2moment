@@ -115,7 +115,7 @@ images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
 	for i in $^ ; do \
 		echo $$i ; \
 		rm -f $$i.ttl ; \
-		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images=true; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=$$i.ttl --images; \
 	done
 
 ${board}.ttl: ${moment}/${board}.json
