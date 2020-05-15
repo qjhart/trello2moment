@@ -39,6 +39,9 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 Imports all the required data from the trello board.
 Creates the json and the associated card thumbnail images.
 
+=item C<images>
+Creates the TTLS associated w/each image.
+
 =item C<${board}.ttl>
 
 create board.ttl
@@ -107,6 +110,7 @@ triptych: ${moment}/${board}.json
 		b=$$(basename $$url); \
 		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
 		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
+		./trello2moment --moment=${moment} --board=${board} --output_file=${moment}/triptych/$$l/$$b.ttl --images ; \
 	done
 
 images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
