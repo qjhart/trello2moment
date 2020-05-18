@@ -34,10 +34,10 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 
 =head2 Methods
 
-=item C<${board}.json import>
+=item C<${board}.json>
 
 Imports all the required data from the trello board.
-Creates the json and the associated card thumbnail images.
+Creates the json.
 
 =item C<images>
 Creates the TTLS associated w/each image.
@@ -82,11 +82,8 @@ INFO::
 check::
 	@podchecker ${MAKEFILE_LIST}
 
-import:${board}.json thumbnails
-
 ${board}.json:
-	[[ -d ${moment} ]] || mkdir ${moment}; \
-	${trello} lists==all cards==visible card_attachments==true | jq . > ${moment}/$@
+	./trello2moment --overwrite --key=${key} --token=${token} --board=${board} --moment=${moment}
 
 thumbnails: ${moment}/${board}.json
 	[[ -d ${moment} ]] || mkdir ${moment}; \

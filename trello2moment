@@ -7,6 +7,7 @@ const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
 const https=require('https');
+const fetch=require('node-fetch');
 const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
@@ -71,6 +72,9 @@ program
 		.description('Convert a Trello board into a UCDavis library moment linked dataset.')
 		.option('-o, --output_file <output_file>','JSON output (default {moment}/moment.json)',null)
     .option('-i, --images','create board images',false)
+    .option('--overwrite','overwrite existing <board>.json',false)
+    .requiredOption('-k, --key <key>','Trello user key')
+    .requiredOption('-t, --token <token>','Trello user token')
 		.requiredOption('-m, --moment <moment>','To moment name')
 		.requiredOption('-b, --board <trello_board>','From Trello Short URL name')
 
@@ -84,17 +88,63 @@ function add(s,p,o) {
 
 var card_type=[];
 
-moment(program.moment,program.board,program.output_file,program.images);
+moment(program.key,program.token,program.moment,program.board,program.output_file,program.images,program.overwrite);
 
-async function moment (moment_name, board_name, output_file, images) {
-  let board;
-  // Get json filename
-  let board_fn=path.join(moment_name, board_name + '.json')
+async function getBoardJSON(key,token,board_name) {
+  try {
+    const response = await fetch('https://api.trello.com/1/boards/' + board_name + '?key=' + key + '&token=' + token + '&lists=all&cards=visible&card_attachments=true', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    const json = await response.json();
+    return json;
+  } catch (e) {
+    console.error('Error: ', e);
+  }
+}
+
+function createBoard(output_path,json) {
+  fs.writeFileSync(output_path, JSON.stringify(json, 0, 2), (err) => {
+    if (err) throw err;
+  });
+}
+
+function getBoard(board_path) {
+  try {
+    return jf.readFileSync(board_path);
+  } catch (err) {
+    throw err;
+  }
+}
+
+async function moment (key, token, moment_name, board_name, output_file, images, overwrite) {
+  let board, board_fn;
+
+  // Create the moment directory
+  await fs.mkdirSync(path.join(moment_name), { recursive: true }, (err) => {
+    if (err) throw err;
+  });
+
+  // Get board name and location
+  board_fn = path.join(moment_name, board_name + '.json');
+
+  // Check if the file exists
+  if ( fs.existsSync(board_fn) ) {
+    // It exists and we want to overwrite
+    if ( overwrite ) {
+      let raw_board = await getBoardJSON(key, token, board_name);
+      createBoard(board_fn, raw_board);
+    }
+  } else {
+    // It doesn't exist so create it
+    let raw_board = await getBoardJSON(key, token, board_name);
+    createBoard(board_fn, raw_board);
+  };
 
   try {
-    board=jf.readFileSync(board_fn);
+    board = getBoard(board_fn);
 	} catch (err) {
-    throw err
+    throw err;
   }
 
   let cards = board.cards;
@@ -187,7 +237,7 @@ function getLink(url) {
     // handle connection errors of the request
     request.on('error', (err) => reject(err));
     request.end();  // Send Request
-  })
+  });
 };
 
 async function format_map_link(map_link) {
