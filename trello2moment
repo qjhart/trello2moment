@@ -200,7 +200,7 @@ async function moment (key, token, moment_name, board_name, output_file, thumbna
         if (err) throw err;
       });
     } else {
-      //console.log(result);
+      console.log(result);
     }
   });
 }
