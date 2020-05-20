@@ -39,12 +39,20 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 Imports all the required data from the trello board.
 Creates the json.
 
-=item C<images>
-Creates the TTLS associated w/each image.
+=item C<overwrite>
+
+Overwrite an existing json file.
+
+=item C<thumbails>
+
+Download all the necessary image thumbnails from Trello.
 
 =item C<${board}.ttl>
 
-create board.ttl
+Create board.ttl
+
+=item C<images>
+Creates the TTLS associated w/each image.
 
 =item C<${moment}_moment.ttl>
 
@@ -83,20 +91,7 @@ check::
 	@podchecker ${MAKEFILE_LIST}
 
 ${board}.json:
-	./trello2moment --overwrite --key=${key} --token=${token} --board=${board} --moment=${moment}
-
-thumbnails: ${moment}/${board}.json
-	[[ -d ${moment} ]] || mkdir ${moment}; \
-	for i in $$(jq -r '.cards[] | select(.cover.idAttachment != null) | .shortLink+ "|" + .id + "/attachments/" + .cover.idAttachment' $< ); do \
-	  IFS='|' read l a <<<"$$i"; \
-			echo i=$$i l=$$l a=$$a ; \
-	  url=$$(http https://api.trello.com/1/cards/$$a key==${key} token==${token} | jq -r .url); \
-			echo https://api.trello.com/1/cards/$$a key==${key} token==${token}; \
-	  b=$$(basename $$url); \
-	  [[ -d ${moment}/$$l ]] || mkdir ${moment}/$$l; \
-		[[ -f ${moment}/$$l/$$b ]] || http $$url > ${moment}/$$l/$$b; \
-	  echo "${moment}/$$l/$$b"; \
-	done
+	./trello2moment --overwrite --thumbnails --key=${key} --token=${token} --board=${board} --moment=${moment}
 
 triptych: ${moment}/${board}.json
 	[[ -d ${moment}/triptych ]] || mkdir ${moment}/triptych; \
@@ -118,7 +113,7 @@ images: $(filter-out %ttl, $(wildcard ${moment}/**/*))
 	done
 
 ${board}.ttl: ${moment}/${board}.json
-	./trello2moment --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
+	./trello2moment --key=${key} --token=${token} --moment=${moment} --board=${board} 2>${moment}/${board}.err > ${moment}/${board}_t.ttl
 	${riot} --formatted=ttl --base=z: ${moment}/${board}_t.ttl | sed -e 's/<z:/</g' > ${moment}/$@
 	rm -f ${moment}/${board}_t.ttl
 
