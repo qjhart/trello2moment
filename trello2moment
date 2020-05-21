@@ -119,7 +119,7 @@ function getBoard(boardPath) {
 
 async function createImageDirectories(momentName, jsonObj) {
   for ( let id in jsonObj ) {
-    if ( jsonObj[id].cover.idAttachment != null ) {
+    if ( jsonObj[id].cover.idAttachment != null || jsonObj[id].name === 'Triptych' ) {
       let shortId = jsonObj[id].shortLink;
       for ( let item of jsonObj[id].attachments ) {
         if ( item.isUpload ) {
