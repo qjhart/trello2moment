@@ -33,29 +33,6 @@ C<<< make [-n] key=I<trello_key> token=I<trello_token> board=I<board_id> moment=
 
 =head2 Methods
 
-<<<<<<< HEAD
-=item C<${board}.json>
-
-Imports all the required data from the trello board.
-Creates the json.
-
-=item C<overwrite>
-
-Overwrite an existing json file.
-
-=item C<thumbails>
-
-Download all the necessary image thumbnails from Trello.
-
-=item C<${board}.ttl>
-
-Create board.ttl
-
-=item C<images>
-Creates the TTLS associated w/each image.
-
-=======
->>>>>>> master
 =item C<${moment}_moment.ttl>
 
 create moment description
@@ -94,15 +71,3 @@ ${moment}_moment.ttl:
 
 ${moment}/${moment}.json: ${moment}_moment.ttl
 	${riot} --formatted=jsonld --base=z: $< | sed 's/z:#//' > $@
-
-triptych: ${moment}/${board}.json
-	[[ -d ${moment}/triptych ]] || mkdir ${moment}/triptych; \
-	for i in $$(jq -r '.cards[] | select(.name == "Triptych") | .shortLink + "|" + .attachments[].id' $< ) ; do \
-		IFS='|' read l a <<<"$$i"; \
-		echo i=$$i l=$$l a=$$a; \
-		url=$$(http https://api.trello.com/1/cards/$$l/attachments/$$a key==${key} token==${token} | jq -r .url); \
-		b=$$(basename $$url); \
-		[[ -d ${moment}/triptych/$$l ]] || mkdir ${moment}/triptych/$$l; \
-		[[ -f ${moment}/triptych/$$l/$$b ]] || http $$url > ${moment}/triptych/$$l/$$b; \
-		./trello2moment --moment=${moment} --board=${board} --output_file=${moment}/triptych/$$l/$$b.ttl; \
-	done
