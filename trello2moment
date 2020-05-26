@@ -69,9 +69,8 @@ Object.keys(schema).forEach((k)=>{schema[k]=namedNode(prefix.schema+k)});
 program
 		.version('0.5.0')
 		.description('Convert a Trello board into a UCDavis library moment linked dataset.')
-		.option('-o, --output_file <output_file>','JSON output (default {moment}/moment.json)',null)
-    .option('-i, --images','create board images',false)
-    .option('--overwrite','overwrite existing <board>.json',false)
+    .option('-v, --verbose','verbose output',false)
+    .option('-o --overwrite','overwrite existing files',false)
     .option('--thumbnails','download thumbnail images',false)
     .requiredOption('-k, --key <key>','Trello user key')
     .requiredOption('-t, --token <token>','Trello user token')
@@ -86,9 +85,24 @@ function add(s,p,o) {
 	return writer.addQuad(s,p,o);
 }
 
+// Allow Verbose Output
+function log(text) {
+  if (program.verbose) {
+    console.log(text)
+  }
+}
+
+// Check for file, but not if overwrite
+function fileExists(fn) {
+  if ( !fs.existsSync(fn) || program.overwrite ) {
+    return false;
+  }
+  return true;
+}
+
 var card_type=[];
 
-moment(program.key,program.token,program.moment,program.board,program.output_file,program.thumbnails,program.images,program.overwrite);
+moment(program.key,program.token,program.moment,program.board,program.thumbnails,program.images,program.overwrite);
 
 async function getBoardJSON(trelloKey,trelloToken,boardName) {
   try {
@@ -117,36 +131,62 @@ function getBoard(boardPath) {
   }
 }
 
-async function createImageDirectories(momentName, jsonObj) {
+async function getImages(momentName, jsonObj) {
   for ( let id in jsonObj ) {
     if ( jsonObj[id].cover.idAttachment != null || jsonObj[id].name === 'Triptych' ) {
       let shortId = jsonObj[id].shortLink;
       for ( let item of jsonObj[id].attachments ) {
         if ( item.isUpload ) {
-          if ( !fs.existsSync(path.join(momentName, shortId)) ) {
-            fs.mkdirSync(path.join(momentName, shortId));
+          let d=path.join(momentName, shortId);
+          if ( !fs.existsSync(d) ) {
+            log(`mkdir ${d}(.ttl)`)
+            fs.mkdirSync(d);
+            let ttl = new N3.Writer({prefixes: prefix});
+            let n=namedNode('');
+            ttl.addQuad(n,rdf.type,schema.BasicContainer)
+            ttl.end((error, result) => {
+              fs.writeFile(`${d}.ttl`, result, (err) => {
+                if (err) throw err;
+              });
+            });
           }
-          await downloadImages(momentName, shortId, item.url, item.name);
+          await fetchFile(item.url,path.join(momentName, shortId, item.name))
         }
       }
     }
   }
 }
 
-function downloadImages(momentName, shortId, url, fileName) {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const res = await fetch(url);
-      res.body
-        .pipe(fs.createWriteStream(path.join(momentName, shortId, fileName)))
-        .on('close', () => resolve());
-    } catch (err) {
-      console.error('Error: ', err);
-    }
-  });
+function fetchFile(url,fileName) {
+  if ( ! fileExists(fileName) ) {
+    log(`fetch ${url} to ${fileName}`);
+    return new Promise(async (resolve, reject) => {
+      try {
+        const res = await fetch(url);
+        res.body
+          .pipe(fs.createWriteStream(fileName))
+          .on('close', () => resolve());
+        let ttl = new N3.Writer({prefixes: prefix});
+        let n=namedNode('');
+        ttl.addQuad(n,schema.publisher,
+                    namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+        ttl.addQuad(n,schema.license,
+                    namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
+        ttl.addQuad(n,schema.encodingFormat,
+                    literal('image/' + path.extname(fileName).substr(1)));
+        ttl.addQuad(n,schema.name,
+                    literal(path.basename(fileName)));
+        ttl.end((error, result) => fs.writeFileSync(`${fileName}.ttl`, result));
+      } catch (err) {
+        console.error('Error: ', err);
+      }
+    });
+  } else {
+    log(`skipping ${url}, ${fileName} exists. (can --overwrite)`);
+  }
 }
 
-async function moment (key, token, moment_name, board_name, output_file, thumbnails, images, overwrite) {
+async function moment (key, token, moment_name, board_name, thumbnails, images) {
   let board, board_fn;
 
   // Create the moment directory
@@ -157,10 +197,13 @@ async function moment (key, token, moment_name, board_name, output_file, thumbna
   // Get board name and location
   board_fn = path.join(moment_name, board_name + '.json');
 
-  if ( !fs.existsSync(board_fn) || overwrite ) {
-      let raw_board = await getBoardJSON(key, token, board_name);
-      createBoard(board_fn, raw_board);
-  };
+  if ( !fileExists(board_fn) ) {
+    log(`fetching ${board_name} to ${board_fn}`);
+    let raw_board = await getBoardJSON(key, token, board_name);
+    createBoard(board_fn, raw_board);
+  } else {
+    log(`using existing ${board_fn}, (can --overwrite)`)
+  }
 
   try {
     board = getBoard(board_fn);
@@ -171,37 +214,18 @@ async function moment (key, token, moment_name, board_name, output_file, thumbna
   let cards = board.cards;
 
   if ( thumbnails ) {
-    createImageDirectories(moment_name,cards);
+    getImages(moment_name,cards);
   }
 
-  if (images) {
-    let _imgName = output_file.split('/');
-    let imgName  = _imgName[_imgName.length - 1];
-    let encType  = imgName.split('.')[1];
-    let n = namedNode('');
-    if ( encType === 'ttl' ) {
-      add(n,rdf.type,schema.BasicContainer);
-    } else {
-      add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
-      add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));            
-      add(n,schema.encodingFormat,literal('image/' + encType));
-      add(n,schema.name,literal(imgName));
-    }
-  } else {
-    set_card_type_from_lists(board.lists);
-    for(let k=0;k<cards.length;k++) {
-      await add_card(cards[k]);
-    }
+  set_card_type_from_lists(board.lists);
+  for(let k=0;k<cards.length;k++) {
+    await add_card(cards[k]);
   }
 
   writer.end((error, result) => {
-    if (program.output_file) {
-      fs.writeFile(program.output_file, result, (err) => {
-        if (err) throw err;
-      });
-    } else {
-      console.log(result);
-    }
+    fs.writeFile(program.moment+'_moment.ttl', result, (err) => {
+      if (err) throw err;
+    });
   });
 }
 
@@ -237,7 +261,7 @@ function add_spo(s,p,o) {
   if ( typeof(o) === 'string' && o.match(urlre) ) {
     o=o.replace(/[\s\n]+$/,'');
     o = namedNode(o.replace('https://trello.com/c/','#'));
-    //console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
+        //console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
   }
   else {
     o=o.replace(/[\s\n]+$/,'');
@@ -248,6 +272,7 @@ function add_spo(s,p,o) {
 }
 
 async function getLink(url) {
+  log(`getLink(${url})`);
   try {
     const response = await fetch(url, {
       method:'HEAD'
