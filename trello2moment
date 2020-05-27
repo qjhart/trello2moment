@@ -133,25 +133,23 @@ function getBoard(boardPath) {
 
 async function getImages(momentName, jsonObj) {
   for ( let id in jsonObj ) {
-    if ( jsonObj[id].cover.idAttachment != null ) {
-      let shortId = jsonObj[id].shortLink;
-      for ( let item of jsonObj[id].attachments ) {
-        if ( item.isUpload ) {
-          let d=path.join(momentName, shortId);
-          if ( !fs.existsSync(d) ) {
-            log(`mkdir ${d}(.ttl)`)
-            fs.mkdirSync(d);
-            let ttl = new N3.Writer({prefixes: prefix});
-            let n=namedNode('');
-            ttl.addQuad(n,rdf.type,schema.BasicContainer)
-            ttl.end((error, result) => {
-              fs.writeFile(`${d}.ttl`, result, (err) => {
-                if (err) throw err;
-              });
+    let shortId = jsonObj[id].shortLink;
+    for ( let item of jsonObj[id].attachments ) {
+      if ( item.isUpload ) {
+        let d=path.join(momentName, shortId);
+        if ( !fs.existsSync(d) ) {
+          log(`mkdir ${d}(.ttl)`)
+          fs.mkdirSync(d);
+          let ttl = new N3.Writer({prefixes: prefix});
+          let n=namedNode('');
+          ttl.addQuad(n,rdf.type,schema.BasicContainer)
+          ttl.end((error, result) => {
+            fs.writeFile(`${d}.ttl`, result, (err) => {
+              if (err) throw err;
             });
-          }
-          await fetchFile(item.url,path.join(momentName, shortId, item.name))
+          });
         }
+        await fetchFile(item.url,path.join(momentName, shortId, item.name))
       }
     }
   }
