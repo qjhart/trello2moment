@@ -184,18 +184,22 @@ function fetchFile(url,fileName) {
   }
 }
 
-function createMomentDefinition(boardJSON, momentName) {
+async function createMomentDefinition(boardJSON, momentName) {
   try {
+    await fetchFile(boardJSON.prefs.backgroundImage, momentName+'/thumbnail.jpg');
+    
     let ttl = new N3.Writer({prefixes: prefix});
     let n   = namedNode('');
     ttl.addQuad(n,rdf.type,schema.BasicContainer);
+    ttl.addQuad(n,rdf.type,literal('ucdlib:Moment'));
     ttl.addQuad(n,schema.publisher,
         namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     ttl.addQuad(n,schema.license,
         namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
     ttl.addQuad(n,schema.name,literal(momentName));
     ttl.addQuad(n,schema.description,literal(boardJSON.desc));
-    ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result))
+    ttl.addQuad(n,schema.thumbnail,literal(momentName+'/thumbnail.jpg'));
+    ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result));
   } catch (err) {
     console.error('Error: ', err);
   }
