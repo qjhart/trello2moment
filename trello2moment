@@ -42,10 +42,13 @@ var schema = {
   caption:1,
   creator:1,
   contentUrl:1,
+  datePublished:1,
   description:1,
   encodingFormat:1,
   headline:1,
+  identifier:1,
   image:1,
+  keywords:1,
   label:1,
   license:1,
   latitude:1,
@@ -55,6 +58,8 @@ var schema = {
   publication:1,
   relatedLinkText:1,
   relatedLink:1,
+  sdDatePublished:1,
+  sdPublisher:1,
   story:1,
   significantLinks:1,
   spatial:1,
@@ -142,7 +147,7 @@ async function getImages(momentName, jsonObj) {
           fs.mkdirSync(d);
           let ttl = new N3.Writer({prefixes: prefix});
           let n=namedNode('');
-          ttl.addQuad(n,rdf.type,schema.BasicContainer)
+          ttl.addQuad(n,rdf.type,schema.BasicContainer);
           ttl.end((error, result) => {
             fs.writeFile(`${d}.ttl`, result, (err) => {
               if (err) throw err;
@@ -162,8 +167,11 @@ function fetchFile(url,fileName) {
       try {
         const res = await fetch(url);
         res.body
-          .pipe(fs.createWriteStream(fileName))
+          .pipe(fs.createWriteStream(fileName.replace(/ /g, '_')))
           .on('close', () => resolve());
+        
+        let cleanFileName = fileName.replace(/ /g, '_'); //remove any pesky whitespaces
+
         let ttl = new N3.Writer({prefixes: prefix});
         let n=namedNode('');
         ttl.addQuad(n,schema.publisher,
@@ -171,16 +179,94 @@ function fetchFile(url,fileName) {
         ttl.addQuad(n,schema.license,
                     namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
         ttl.addQuad(n,schema.encodingFormat,
-                    literal('image/' + path.extname(fileName).substr(1)));
+                    literal('image/' + path.extname(cleanFileName).substr(1)));
         ttl.addQuad(n,schema.name,
-                    literal(path.basename(fileName)));
-        ttl.end((error, result) => fs.writeFileSync(`${fileName}.ttl`, result));
+                    literal(path.basename(cleanFileName)));
+        ttl.end((error, result) => fs.writeFileSync(`${cleanFileName}.ttl`, result));
       } catch (err) {
         console.error('Error: ', err);
       }
     });
   } else {
     log(`skipping ${url}, ${fileName} exists. (can --overwrite)`);
+  }
+}
+
+// https://help.trello.com/article/759-getting-the-time-a-card-or-board-was-created
+function getBoardCreationDate(boardJSON) {
+  return new Date(1000*parseInt(boardJSON.id.substr(0,8),16));
+}
+
+function getKeywordsFromBoardDescription(boardJSON) {  
+  let arr = [];
+
+  let pred='';
+  let text=[''];
+  let list_depth = 0;
+
+  let json = marked.lexer(boardJSON.desc);
+  json.push({type:'heading','text':'EndQ'});
+  for ( let i=0; i<json.length; i++ ) {
+    let item = json[i];
+    switch (item.type) {
+      case 'heading':
+        if (text[0].length > 1)
+          pred = item.text;
+          list_depth = 0;
+          text = [''];
+          break;
+        case 'list_start':
+          list_depth++;
+          text[list_depth] = '';
+          break;
+        case 'list_end':
+          list_depth--;
+          break;
+        case 'list_item_start':
+          break;
+        case 'list_item_end':
+          text[list_depth]='';
+          break;
+        case 'text':
+          if ( list_depth === 1 ) {
+            text[list_depth] += item.text;
+            arr.push(text[list_depth]);
+          }
+        default:
+          break;
+    }
+  }
+
+  return arr;
+}
+
+async function createMomentDefinition(boardJSON, momentName) {
+  try {
+    await fetchFile(boardJSON.prefs.backgroundImage, momentName+'/thumbnail.jpg');
+
+    let ttl = new N3.Writer({prefixes: prefix});
+    let n   = namedNode('');
+    ttl.addQuad(n,rdf.type,schema.BasicContainer);
+    ttl.addQuad(n,rdf.type,literal('ucdlib:Moment'));
+    ttl.addQuad(n,schema.publisher,
+        namedNode('http://id.loc.gov/authorities/names/no2008108707'));
+    ttl.addQuad(n,schema.license,
+        namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
+
+    let keywordsArray = getKeywordsFromBoardDescription(boardJSON);
+    for ( let i=0; i<keywordsArray.length; i++ ) {
+      ttl.addQuad(n,schema.keywords, literal(keywordsArray[i]));
+    };
+
+    ttl.addQuad(n,schema.name,literal(momentName));
+    ttl.addQuad(n,schema.description,literal(boardJSON.desc));
+    ttl.addQuad(n,schema.datePublished,literal(getBoardCreationDate(boardJSON).getFullYear()));
+    ttl.addQuad(n,schema.sdDatePublished,literal(new Date().getFullYear()));
+    ttl.addQuad(n,schema.sdPublisher,literal('TODO'));
+    ttl.addQuad(n,schema.image,namedNode(momentName+'/thumbnail.jpg'));
+    ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result));
+  } catch (err) {
+    console.error('Error: ', err);
   }
 }
 
@@ -209,6 +295,8 @@ async function moment (key, token, moment_name, board_name, thumbnails, images) 
     throw err;
   }
 
+  createMomentDefinition(board, moment_name);
+
   let cards = board.cards;
 
   if ( thumbnails ) {
@@ -216,6 +304,7 @@ async function moment (key, token, moment_name, board_name, thumbnails, images) 
   }
 
   set_card_type_from_lists(board.lists);
+
   for(let k=0;k<cards.length;k++) {
     await add_card(cards[k]);
   }
