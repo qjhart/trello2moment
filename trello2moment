@@ -167,8 +167,11 @@ function fetchFile(url,fileName) {
       try {
         const res = await fetch(url);
         res.body
-          .pipe(fs.createWriteStream(fileName))
+          .pipe(fs.createWriteStream(fileName.replace(/ /g, '_')))
           .on('close', () => resolve());
+        
+        let cleanFileName = fileName.replace(/ /g, '_'); //remove any pesky whitespaces
+
         let ttl = new N3.Writer({prefixes: prefix});
         let n=namedNode('');
         ttl.addQuad(n,schema.publisher,
@@ -176,10 +179,10 @@ function fetchFile(url,fileName) {
         ttl.addQuad(n,schema.license,
                     namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
         ttl.addQuad(n,schema.encodingFormat,
-                    literal('image/' + path.extname(fileName).substr(1)));
+                    literal('image/' + path.extname(cleanFileName).substr(1)));
         ttl.addQuad(n,schema.name,
-                    literal(path.basename(fileName)));
-        ttl.end((error, result) => fs.writeFileSync(`${fileName}.ttl`, result));
+                    literal(path.basename(cleanFileName)));
+        ttl.end((error, result) => fs.writeFileSync(`${cleanFileName}.ttl`, result));
       } catch (err) {
         console.error('Error: ', err);
       }
@@ -195,7 +198,6 @@ function getBoardCreationDate(boardJSON) {
 }
 
 function getKeywordsFromBoardDescription(boardJSON) {  
-  console.log(boardJSON.desc)
   let arr = [];
 
   let pred='';
