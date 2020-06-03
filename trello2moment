@@ -197,7 +197,8 @@ function getBoardCreationDate(boardJSON) {
   return new Date(1000*parseInt(boardJSON.id.substr(0,8),16));
 }
 
-function getKeywordsFromBoardDescription(boardJSON) {  
+function getKeywordsFromBoardDescription(boardJSON, _wordType) { 
+  let wordType = _wordType.toLowerCase();
   let arr = [];
 
   let pred='';
@@ -210,6 +211,14 @@ function getKeywordsFromBoardDescription(boardJSON) {
     let item = json[i];
     switch (item.type) {
       case 'heading':
+        if ( item.depth === 1 ) {
+          console.log(wordType)
+          if ( item.text === 'Keywords' ) {
+            pred = item.text;
+          } else if ( item.text === 'About' ) {
+            pred = item.text;
+          }
+        }
         if (text[0].length > 1)
           pred = item.text;
           list_depth = 0;
@@ -228,9 +237,9 @@ function getKeywordsFromBoardDescription(boardJSON) {
           text[list_depth]='';
           break;
         case 'text':
-          if ( list_depth === 1 ) {
+          if ( pred.toLowerCase() === wordType ) {
             text[list_depth] += item.text;
-            arr.push(text[list_depth]);
+            arr.push(text[list_depth])
           }
         default:
           break;
@@ -253,10 +262,15 @@ async function createMomentDefinition(boardJSON, momentName) {
     ttl.addQuad(n,schema.license,
         namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
 
-    let keywordsArray = getKeywordsFromBoardDescription(boardJSON);
+    let keywordsArray = getKeywordsFromBoardDescription(boardJSON,'Keywords');
     for ( let i=0; i<keywordsArray.length; i++ ) {
       ttl.addQuad(n,schema.keywords, literal(keywordsArray[i]));
     };
+
+    let aboutArray  = getKeywordsFromBoardDescription(boardJSON,'About');
+    for ( let i=0; i<aboutArray.length; i++) {
+      ttl.addQuad(n,schema.about,literal(aboutArray[i]));
+    }
 
     ttl.addQuad(n,schema.name,literal(momentName));
     ttl.addQuad(n,schema.description,literal(boardJSON.desc));
