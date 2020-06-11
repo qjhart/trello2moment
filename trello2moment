@@ -212,7 +212,6 @@ function getKeywordsFromBoardDescription(boardJSON, _wordType) {
     switch (item.type) {
       case 'heading':
         if ( item.depth === 1 ) {
-          console.log(wordType)
           if ( item.text === 'Keywords' ) {
             pred = item.text;
           } else if ( item.text === 'About' ) {
@@ -268,15 +267,25 @@ async function createMomentDefinition(boardJSON, momentName) {
     };
 
     let aboutArray  = getKeywordsFromBoardDescription(boardJSON,'About');
+
     for ( let i=0; i<aboutArray.length; i++) {
-      ttl.addQuad(n,schema.about,literal(aboutArray[i]));
+      if ( aboutArray[i].match(/\[(.*?)\]/) ) {
+        let item = aboutArray[i].replace(/\[/,'').split(']');
+        ttl.addQuad(n,schema.about,literal(item));
+      }
+      else if ( aboutArray[i].match(/\s/) ) {
+        let item = aboutArray[i].split(' ');
+        ttl.addQuad(n,schema.about,literal(item));
+      } else {
+        ttl.addQuad(n,schema.about,literal(aboutArray[i]));
+      }
     }
 
     ttl.addQuad(n,schema.name,literal(momentName));
     ttl.addQuad(n,schema.description,literal(boardJSON.desc));
     ttl.addQuad(n,schema.datePublished,literal(getBoardCreationDate(boardJSON).getFullYear()));
     ttl.addQuad(n,schema.sdDatePublished,literal(new Date().getFullYear()));
-    ttl.addQuad(n,schema.sdPublisher,literal('TODO'));
+    ttl.addQuad(n,schema.sdPublisher,literal('TODO')); //TODO: this
     ttl.addQuad(n,schema.image,namedNode(momentName+'/thumbnail.jpg'));
     ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result));
   } catch (err) {
