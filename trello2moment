@@ -218,11 +218,15 @@ function getKeywordsFromBoardDescription(boardJSON, _wordType) {
             pred = item.text;
           }
         }
-        if (text[0].length > 1)
+        
+        if (text[0].length > 1) {
           pred = item.text;
           list_depth = 0;
           text = [''];
-          break;
+        }
+
+        break;
+
         case 'list_start':
           list_depth++;
           text[list_depth] = '';
@@ -267,13 +271,11 @@ async function createMomentDefinition(boardJSON, momentName) {
     };
 
     let aboutArray  = getKeywordsFromBoardDescription(boardJSON,'About');
-
     for ( let i=0; i<aboutArray.length; i++) {
       if ( aboutArray[i].match(/\[(.*?)\]/) ) {
         let item = aboutArray[i].replace(/\[/,'').split(']');
         ttl.addQuad(n,schema.about,literal(item));
-      }
-      else if ( aboutArray[i].match(/\s/) ) {
+      } else if ( aboutArray[i].match(/\s/) ) {
         let item = aboutArray[i].split(' ');
         ttl.addQuad(n,schema.about,literal(item));
       } else {
