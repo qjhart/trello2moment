@@ -7,6 +7,7 @@ const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
 const fetch=require('node-fetch');
+const urljoin = require('url-join');
 const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
@@ -575,7 +576,8 @@ async function add_card(card) {
       card.attachments.forEach((a)=>{
         if (a.id === card.idAttachmentCover) {
           //console.error('card.cover.add');
-          add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
+          let a_url_basename = new URL(a.url).pathname.split('/').pop();
+          add(n,schema.thumbnail,namedNode(urljoin(card.shortLink, a_url_basename)));
         }
       });
     }
