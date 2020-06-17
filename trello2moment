@@ -7,6 +7,7 @@ const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
 const fetch=require('node-fetch');
+const urljoin = require('url-join');
 const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
@@ -197,7 +198,8 @@ function getBoardCreationDate(boardJSON) {
   return new Date(1000*parseInt(boardJSON.id.substr(0,8),16));
 }
 
-function getKeywordsFromBoardDescription(boardJSON) {  
+function getKeywordsFromBoardDescription(boardJSON, _wordType) { 
+  let wordType = _wordType.toLowerCase();
   let arr = [];
 
   let pred='';
@@ -210,11 +212,22 @@ function getKeywordsFromBoardDescription(boardJSON) {
     let item = json[i];
     switch (item.type) {
       case 'heading':
-        if (text[0].length > 1)
+        if ( item.depth === 1 ) {
+          if ( item.text === 'Keywords' ) {
+            pred = item.text;
+          } else if ( item.text === 'About' ) {
+            pred = item.text;
+          }
+        }
+        
+        if (text[0].length > 1) {
           pred = item.text;
           list_depth = 0;
           text = [''];
-          break;
+        }
+
+        break;
+
         case 'list_start':
           list_depth++;
           text[list_depth] = '';
@@ -228,9 +241,9 @@ function getKeywordsFromBoardDescription(boardJSON) {
           text[list_depth]='';
           break;
         case 'text':
-          if ( list_depth === 1 ) {
+          if ( pred.toLowerCase() === wordType ) {
             text[list_depth] += item.text;
-            arr.push(text[list_depth]);
+            arr.push(text[list_depth])
           }
         default:
           break;
@@ -253,16 +266,29 @@ async function createMomentDefinition(boardJSON, momentName) {
     ttl.addQuad(n,schema.license,
         namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
 
-    let keywordsArray = getKeywordsFromBoardDescription(boardJSON);
+    let keywordsArray = getKeywordsFromBoardDescription(boardJSON,'Keywords');
     for ( let i=0; i<keywordsArray.length; i++ ) {
       ttl.addQuad(n,schema.keywords, literal(keywordsArray[i]));
     };
+
+    let aboutArray  = getKeywordsFromBoardDescription(boardJSON,'About');
+    for ( let i=0; i<aboutArray.length; i++) {
+      if ( aboutArray[i].match(/\[(.*?)\]/) ) {
+        let item = aboutArray[i].replace(/\[/,'').split(']');
+        ttl.addQuad(n,schema.about,literal(item));
+      } else if ( aboutArray[i].match(/\s/) ) {
+        let item = aboutArray[i].split(' ');
+        ttl.addQuad(n,schema.about,literal(item));
+      } else {
+        ttl.addQuad(n,schema.about,literal(aboutArray[i]));
+      }
+    }
 
     ttl.addQuad(n,schema.name,literal(momentName));
     ttl.addQuad(n,schema.description,literal(boardJSON.desc));
     ttl.addQuad(n,schema.datePublished,literal(getBoardCreationDate(boardJSON).getFullYear()));
     ttl.addQuad(n,schema.sdDatePublished,literal(new Date().getFullYear()));
-    ttl.addQuad(n,schema.sdPublisher,literal('TODO'));
+    ttl.addQuad(n,schema.sdPublisher,literal('TODO')); //TODO: this
     ttl.addQuad(n,schema.image,namedNode(momentName+'/thumbnail.jpg'));
     ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result));
   } catch (err) {
@@ -550,7 +576,8 @@ async function add_card(card) {
       card.attachments.forEach((a)=>{
         if (a.id === card.idAttachmentCover) {
           //console.error('card.cover.add');
-          add(n,schema.thumbnail,namedNode(path.join(card.shortLink,path.basename(a.url))));
+          let a_url_basename = new URL(a.url).pathname.split('/').pop();
+          add(n,schema.thumbnail,namedNode(urljoin(card.shortLink, a_url_basename)));
         }
       });
     }
