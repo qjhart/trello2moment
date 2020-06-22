@@ -260,7 +260,8 @@ async function createMomentDefinition(boardJSON, momentName) {
     let ttl = new N3.Writer({prefixes: prefix});
     let n   = namedNode('');
     ttl.addQuad(n,rdf.type,schema.BasicContainer);
-    ttl.addQuad(n,rdf.type,literal('ucdlib:Moment'));
+    ttl.addQuad(n,rdf.type,namedNode('ucdlib:Moment'));
+    ttl.addQuad(n,rdf.type,namedNode('ucdlib:BagOfFiles'));
     ttl.addQuad(n,schema.publisher,
         namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     ttl.addQuad(n,schema.license,
@@ -576,7 +577,7 @@ async function add_card(card) {
       card.attachments.forEach((a)=>{
         if (a.id === card.idAttachmentCover) {
           //console.error('card.cover.add');
-          let a_url_basename = new URL(a.url).pathname.split('/').pop();
+          let a_url_basename = new URL(a.url).pathname.split('/').pop();          
           add(n,schema.thumbnail,namedNode(urljoin(card.shortLink, a_url_basename)));
         }
       });
