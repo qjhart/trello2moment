@@ -227,26 +227,25 @@ function getKeywordsFromBoardDescription(boardJSON, _wordType) {
         }
 
         break;
-
-        case 'list_start':
-          list_depth++;
-          text[list_depth] = '';
-          break;
-        case 'list_end':
-          list_depth--;
-          break;
-        case 'list_item_start':
-          break;
-        case 'list_item_end':
-          text[list_depth]='';
-          break;
-        case 'text':
-          if ( pred.toLowerCase() === wordType ) {
-            text[list_depth] += item.text;
-            arr.push(text[list_depth])
-          }
-        default:
-          break;
+      case 'list_start':
+        list_depth++;
+        text[list_depth] = '';
+        break;
+      case 'list_end':
+        list_depth--;
+        break;
+      case 'list_item_start':
+        break;
+      case 'list_item_end':
+        text[list_depth]='';
+        break;
+      case 'text':
+        if ( pred.toLowerCase() === wordType ) {
+          text[list_depth] += item.text;
+          arr.push(text[list_depth])
+        }
+      default:
+        break;
     }
   }
 
@@ -289,7 +288,7 @@ async function createMomentDefinition(boardJSON, momentName) {
     ttl.addQuad(n,schema.description,literal(boardJSON.desc));
     ttl.addQuad(n,schema.datePublished,literal(getBoardCreationDate(boardJSON).getFullYear()));
     ttl.addQuad(n,schema.sdDatePublished,literal(new Date().getFullYear()));
-    ttl.addQuad(n,schema.sdPublisher,literal('TODO')); //TODO: this
+    //ttl.addQuad(n,schema.sdPublisher,literal('fast:972696')); TODO: this => http://experimental.worldcat.org/fast/843527/
     ttl.addQuad(n,schema.image,namedNode(momentName+'/thumbnail.jpg'));
     ttl.end((error, result) => fs.writeFileSync(`${momentName}.ttl`, result));
   } catch (err) {
@@ -450,15 +449,19 @@ async function add_desc(node,desc) {
   let list_depth=0;
 
   let json = marked.lexer(desc);
+
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
-  for ( let i=0; i<json.length; i++) {
+  for (let i=0; i<json.length; i++) {
     let item=json[i];
-    switch (item.type) {
+    switch (item.type) { 
       case 'heading':
         if (text[0].length > 1)
-          if (item.text === 'Description') add_spo(node,schema.story,text[0]);
-          else add_spo(node,schema.description,text[0]);
+          if (item.text === 'Description') {
+            add_spo(node,schema.story,text[0]);
+          } else {
+            add_spo(node,schema.description,text[0]);
+          }
           pred = item.text;
           list_depth = 0;
           text = [''];
@@ -628,6 +631,15 @@ async function add_card(card) {
       });
       add(n,rdf.type,schema.WebPage);
       if ("desc" in card) {
+        
+        /* This section checks for a missing space between a # character and a section header
+              example: 
+                #Images or #Sources vs # Images or # Sources (correct formatting to not break in marked.lexer)
+        */
+        if ( card.desc.match(/\#\w+\n/g) ) {
+          card.desc = card.desc.replace(/\#\b/g, '# ');
+        }
+
         await add_desc(n,card.desc);
       }
     }
