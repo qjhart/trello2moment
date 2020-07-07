@@ -28,6 +28,12 @@ var rdf= {
 }
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
+var ucdlib = {
+  BagOfFiles:1,
+  Moment:1
+}
+Object.keys(ucdlib).forEach((k)=>{ucdlib[k]=namedNode(prefix.ucdlib+k)});
+
 var schema = {
   BasicContainer:1,
   CreativeWork:1,
@@ -170,7 +176,7 @@ function fetchFile(url,fileName) {
         res.body
           .pipe(fs.createWriteStream(fileName.replace(/ /g, '_')))
           .on('close', () => resolve());
-        
+
         let cleanFileName = fileName.replace(/ /g, '_'); //remove any pesky whitespaces
 
         let ttl = new N3.Writer({prefixes: prefix});
@@ -198,7 +204,7 @@ function getBoardCreationDate(boardJSON) {
   return new Date(1000*parseInt(boardJSON.id.substr(0,8),16));
 }
 
-function getKeywordsFromBoardDescription(boardJSON, _wordType) { 
+function getKeywordsFromBoardDescription(boardJSON, _wordType) {
   let wordType = _wordType.toLowerCase();
   let arr = [];
 
@@ -219,7 +225,7 @@ function getKeywordsFromBoardDescription(boardJSON, _wordType) {
             pred = item.text;
           }
         }
-        
+
         if (text[0].length > 1) {
           pred = item.text;
           list_depth = 0;
@@ -259,8 +265,9 @@ async function createMomentDefinition(boardJSON, momentName) {
     let ttl = new N3.Writer({prefixes: prefix});
     let n   = namedNode('');
     ttl.addQuad(n,rdf.type,schema.BasicContainer);
-    ttl.addQuad(n,rdf.type,namedNode('ucdlib:Moment'));
-    ttl.addQuad(n,rdf.type,namedNode('ucdlib:BagOfFiles'));
+    ttl.addQuad(n,rdf.type,ucdlib.Moment);
+    ttl.addQuad(n,rdf.type,schema.CreativeWork);
+    ttl.addQuad(n,rdf.type,ucdlib.BagOfFiles);
     ttl.addQuad(n,schema.publisher,
         namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     ttl.addQuad(n,schema.license,
@@ -631,9 +638,9 @@ async function add_card(card) {
       });
       add(n,rdf.type,schema.WebPage);
       if ("desc" in card) {
-        
+
         /* This section checks for a missing space between a # character and a section header
-              example: 
+              example:
                 #Images or #Sources vs # Images or # Sources (correct formatting to not break in marked.lexer)
         */
         if ( card.desc.match(/\#\w+\n/g) ) {
