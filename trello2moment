@@ -28,6 +28,12 @@ var rdf= {
 }
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
+var ldp = {
+  BasicContainer:1,
+  Dataset:1
+}
+Object.keys(ldp).forEach((k)=>{ldp[k]=namedNode(prefix.ldp+k)});
+
 var ucdlib = {
   BagOfFiles:1,
   Moment:1
@@ -35,8 +41,7 @@ var ucdlib = {
 Object.keys(ucdlib).forEach((k)=>{ucdlib[k]=namedNode(prefix.ucdlib+k)});
 
 var schema = {
-  BasicContainer:1,
-  CreativeWork:1,
+  CreativeWork: 1,
   Event:1,
   ImageObject:1,
   Thing:1,
@@ -154,7 +159,7 @@ async function getImages(momentName, jsonObj) {
           fs.mkdirSync(d);
           let ttl = new N3.Writer({prefixes: prefix});
           let n=namedNode('');
-          ttl.addQuad(n,rdf.type,schema.BasicContainer);
+          ttl.addQuad(n,rdf.type,ldp.BasicContainer);
           ttl.end((error, result) => {
             fs.writeFile(`${d}.ttl`, result, (err) => {
               if (err) throw err;
@@ -264,9 +269,10 @@ async function createMomentDefinition(boardJSON, momentName) {
 
     let ttl = new N3.Writer({prefixes: prefix});
     let n   = namedNode('');
-    ttl.addQuad(n,rdf.type,schema.BasicContainer);
-    ttl.addQuad(n,rdf.type,ucdlib.Moment);
+    ttl.addQuad(n,rdf.type,ldp.BasicContainer);    
+    ttl.addQuad(n,rdf.type,ldp.Dataset);
     ttl.addQuad(n,rdf.type,schema.CreativeWork);
+    ttl.addQuad(n,rdf.type,ucdlib.Moment);
     ttl.addQuad(n,rdf.type,ucdlib.BagOfFiles);
     ttl.addQuad(n,schema.publisher,
         namedNode('http://id.loc.gov/authorities/names/no2008108707'));
