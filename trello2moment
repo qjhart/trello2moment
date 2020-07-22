@@ -166,7 +166,8 @@ async function getImages(momentName, jsonObj) {
             });
           });
         }
-        await fetchFile(item.url,path.join(momentName, shortId, item.name))
+
+        await fetchFile(item.url,path.join(momentName, shortId, item.fileName))
       }
     }
   }
@@ -178,6 +179,7 @@ function fetchFile(url,fileName) {
     return new Promise(async (resolve, reject) => {
       try {
         const res = await fetch(url);
+
         res.body
           .pipe(fs.createWriteStream(fileName.replace(/ /g, '_')))
           .on('close', () => resolve());
@@ -593,7 +595,7 @@ async function add_card(card) {
       card.attachments.forEach((a)=>{
         if (a.id === card.idAttachmentCover) {
           //console.error('card.cover.add');
-          let a_url_basename = new URL(a.url).pathname.split('/').pop();          
+          let a_url_basename = new URL(a.url).pathname.split('/').pop();
           add(n,schema.thumbnail,namedNode(urljoin(card.shortLink, a_url_basename)));
         }
       });
