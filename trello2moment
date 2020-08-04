@@ -7,7 +7,6 @@ const fs=require('fs');
 const path=require('path');
 const N3=require('n3');
 const fetch=require('node-fetch');
-const urljoin = require('url-join');
 const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
@@ -66,6 +65,7 @@ var schema = {
   latitude:1,
   longitude:1,
   name:1,
+  position:1,
   publisher:1,
   publication:1,
   relatedLinkText:1,
@@ -347,7 +347,7 @@ async function moment (key, token, moment_name, board_name, thumbnails, images) 
   set_card_type_from_lists(board.lists);
 
   for(let k=0;k<cards.length;k++) {
-    await add_card(cards[k]);
+    await add_card(cards[k],k);
   }
 
   writer.end((error, result) => {
@@ -576,7 +576,7 @@ async function add_desc(node,desc) {
   }
 }
 
-async function add_card(card) {
+async function add_card(card,position) {
   // Weed out the Template cards & Archived 'closed' cards
   if ( card['isTemplate'] || card['closed'] ) return;
 
@@ -588,6 +588,7 @@ async function add_card(card) {
     add(n,schema.name,literal(card.name));
     add(n,schema.publisher,namedNode('http://id.loc.gov/authorities/names/no2008108707'));
     add(n,schema.license,namedNode('http://rightsstatements.org/vocab/CNE/1.0/'));
+    add(n,schema.position,literal(position));
     add(n,rdf.type,type);
 
     if (card.idAttachmentCover) {
