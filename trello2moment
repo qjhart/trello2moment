@@ -11,6 +11,7 @@ const { namedNode, literal, defaultGraph, quad } = N3.DataFactory;
 const n3u=N3.Util;
 const marked = require('marked');
 const traverse = require('traverse');
+const urljoin = require('url-join');
 
 var prefix= {
   schema: 'http://schema.org/',
@@ -645,9 +646,9 @@ async function add_card(card,position) {
       card.labels.forEach((l)=>{
         add(n,schema.label,literal(l.name));
       });
+
       add(n,rdf.type,schema.WebPage);
       if ("desc" in card) {
-
         /* This section checks for a missing space between a # character and a section header
               example:
                 #Images or #Sources vs # Images or # Sources (correct formatting to not break in marked.lexer)
