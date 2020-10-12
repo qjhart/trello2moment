@@ -44,6 +44,7 @@ var schema = {
   CreativeWork: 1,
   Event:1,
   ImageObject:1,
+  ListItem:1,
   Thing:1,
   Person:1,
   Place:1,
@@ -655,6 +656,16 @@ async function add_card(card,position) {
         */
         if ( card.desc.match(/\#\w+\n/g) ) {
           card.desc = card.desc.replace(/\#\b/g, '# ');
+        }
+        
+        if ( card.name === 'Triptych' ) {
+          let a = [];
+          let b = {};
+          for (let i=0; i<card.attachments.length; i++) {
+            b[card.attachments[i].pos] = card.attachments[i].fileName;            
+          }
+          a.push(b);
+          card.desc.concat('\r\n- ' + JSON.stringify(a));
         }
 
         await add_desc(n,card.desc);
