@@ -273,7 +273,7 @@ async function createMomentDefinition(boardJSON, momentName) {
 
     let ttl = new N3.Writer({prefixes: prefix});
     let n   = namedNode('');
-    ttl.addQuad(n,rdf.type,ldp.BasicContainer);    
+    ttl.addQuad(n,rdf.type,ldp.BasicContainer);
     ttl.addQuad(n,rdf.type,ldp.Dataset);
     ttl.addQuad(n,rdf.type,schema.CreativeWork);
     ttl.addQuad(n,rdf.type,ucdlib.Moment);
@@ -446,12 +446,15 @@ async function format_map_link(map_link) {
   return b;
 }
 
-function format_image(str) {
+function format_image(str,position,url) {
   let b = [{ predicate: rdf.type, object: schema.ImageObject }];
+  b.push({predicate: schema.position,object: literal(position)});
   let tmpArray = str.split('/');
   for ( let key in tmpArray ) {
     if (tmpArray[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
-      b.push({predicate: schema.contentUrl, object: literal(tmpArray[key].trim())});
+      //      let image = new URL(url).pathname.split('/').pop();
+      let image_url=tmpArray[key].trim()
+      b.push({predicate: schema.contentUrl, object: namedNode(image_url)});
     } else {
       b.push({predicate: schema.caption, object: literal(tmpArray[key].trim())});
     }
@@ -464,116 +467,118 @@ async function add_desc(node,desc) {
   let pred='';
   let text=[''];
   let list_depth=0;
-
+  let list_position=0;
   let json = marked.lexer(desc);
 
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
   for (let i=0; i<json.length; i++) {
     let item=json[i];
-    switch (item.type) { 
-      case 'heading':
-        if (text[0].length > 1)
-          if (item.text === 'Description') {
-            add_spo(node,schema.story,text[0]);
+    switch (item.type) {
+    case 'heading':
+      if (text[0].length > 1)
+        if (item.text === 'Description') {
+          add_spo(node,schema.story,text[0]);
+        } else {
+          add_spo(node,schema.description,text[0]);
+        }
+      pred = item.text;
+      list_depth = 0;
+      text = [''];
+      break;
+    case 'list_start':
+      list_depth++;
+      list_position=0;
+      text[list_depth] = '';
+      break;
+    case 'list_end':
+      list_depth--;
+      break;
+    case 'list_item_start':
+      list_position++
+      break;
+    case 'list_item_end':
+      switch(pred) {
+      case "About":
+        let reg = new RegExp(/\(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g);
+        if ( text[list_depth].match(reg) ) {
+          add_spo(node, schema.license, text[list_depth]);
+        } else {
+          add_spo(node, schema.about, text[list_depth]);
+        }
+        break;
+      case "Attribution":
+        add_spo(node, schema.author, text[list_depth]);
+        break;
+      case "Date":
+        add_spo(node,schema.temporal,text[list_depth]);
+        break;
+      case "Headline":
+        add_spo(node,schema.headline,text[list_depth]);
+        break;
+      case "Identifier":
+        add_spo(node, schema.story, text[list_depth]);
+        break;
+      case "Image Caption":
+        add_spo(node,schema.caption,text[list_depth]);
+        break;
+      case "Image Credit":
+        add_spo(node,schema.creator,text[list_depth]);
+        break;
+      case "Images":
+        let c = format_image(text[list_depth],list_position);
+        add(node,schema.image,writer.blank(c));
+        break;
+      case "Learn More":
+        if ( list_depth === 1 ) {
+          add_spo(node,schema.relatedLinkText,text[list_depth]);
+        } else {
+          let link = text[list_depth];
+          if ( text[list_depth].match(/(http(s?)):\/\//i) === null ) {
+            link = 'https://' + text[list_depth];
           } else {
-            add_spo(node,schema.description,text[0]);
+            link = text[list_depth];
           }
-          pred = item.text;
-          list_depth = 0;
-          text = [''];
-          break;
-        case 'list_start':
-          list_depth++;
-          text[list_depth] = '';
-          break;
-        case 'list_end':
-          list_depth--;
-          break;
-        case 'list_item_start':
-          break;
-        case 'list_item_end':
-          switch(pred) {
-            case "About":
-              let reg = new RegExp(/\(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g);
-              if ( text[list_depth].match(reg) ) {
-                add_spo(node, schema.license, text[list_depth]);
-              } else {
-                add_spo(node, schema.about, text[list_depth]);
-              }
-              break;
-            case "Attribution":
-              add_spo(node, schema.author, text[list_depth]);
-              break;
-            case "Date":
-              add_spo(node,schema.temporal,text[list_depth]);
-              break;
-            case "Headline":
-              add_spo(node,schema.headline,text[list_depth]);
-              break;
-            case "Identifier":
-              add_spo(node, schema.story, text[list_depth]);
-              break;
-            case "Image Caption":
-              add_spo(node,schema.caption,text[list_depth]);
-              break;
-            case "Image Credit":
-              add_spo(node,schema.creator,text[list_depth]);
-              break;
-            case "Images":
-              let c = format_image(text[list_depth]);
-              add(node,schema.image,writer.blank(c));
-              break;
-            case "Learn More":
-              if ( list_depth === 1 ) {
-                add_spo(node,schema.relatedLinkText,text[list_depth]);
-              } else {
-                let link = text[list_depth];
-                if ( text[list_depth].match(/(http(s?)):\/\//i) === null ) {
-                  link = 'https://' + text[list_depth];
-                } else {
-                  link = text[list_depth];
-                }
-                add_spo(node,schema.relatedLink,link);
-              }
-              break;
-            case "Location":
-              if (text[list_depth].match(/^http(s):/)) {
-                let b=await format_map_link(text[list_depth]);
-                add(node, schema.spatial, writer.blank(b));
-              } else {
-                add_spo(node,schema.spatial,text[list_depth]);
-              }
-              break;
-            case "Sources":
-              add_spo(node, schema.publication, text[list_depth]);
-              break;
-            case "Source":
-              add_spo(node, schema.publication, text[list_depth]);
-              break;
-            case "Text":
-              if ( list_depth === 1 ) {
-                add_spo(node, schema.headline, text[list_depth]);
-              } else {
-                add_spo(node, schema.text, text[list_depth]);
-              }
-              break;
-            default:
-              //console.error(`# ${node},${pred} ${text[1]} #`);
-          }
-          text[list_depth]='';
-          break;
-        case 'text':
-          text[list_depth] += item.text;
-          break;
-        case 'space':
-          text[list_depth] += ' ';
-          break;
-        case 'paragraph':
-          text[list_depth] += item.text + '\n\n';
-          break;
-        default:
-          break;
+          add_spo(node,schema.relatedLink,link);
+        }
+        break;
+      case "Location":
+        if (text[list_depth].match(/^http(s):/)) {
+          let b=await format_map_link(text[list_depth]);
+          add(node, schema.spatial, writer.blank(b));
+        } else {
+          add_spo(node,schema.spatial,text[list_depth]);
+        }
+        break;
+      case "Sources":
+        add_spo(node, schema.publication, text[list_depth]);
+        break;
+      case "Source":
+        add_spo(node, schema.publication, text[list_depth]);
+        break;
+      case "Text":
+        if ( list_depth === 1 ) {
+          add_spo(node, schema.headline, text[list_depth]);
+        } else {
+          add_spo(node, schema.text, text[list_depth]);
+        }
+        break;
+      default:
+        //console.error(`# ${node},${pred} ${text[1]} #`);
+      }
+      text[list_depth]='';
+      break;
+    case 'text':
+      text[list_depth] += item.text;
+      break;
+    case 'space':
+      text[list_depth] += ' ';
+      break;
+    case 'paragraph':
+      text[list_depth] += item.text + '\n\n';
+      break;
+    default:
+      break;
     }
   }
 }
@@ -657,17 +662,6 @@ async function add_card(card,position) {
         if ( card.desc.match(/\#\w+\n/g) ) {
           card.desc = card.desc.replace(/\#\b/g, '# ');
         }
-        
-        if ( card.name === 'Triptych' ) {
-          let a = [];
-          let b = {};
-          for (let i=0; i<card.attachments.length; i++) {
-            b[card.attachments[i].pos] = card.attachments[i].fileName;            
-          }
-          a.push(b);
-          card.desc.concat('\r\n- ' + JSON.stringify(a));
-        }
-
         await add_desc(n,card.desc);
       }
     }
