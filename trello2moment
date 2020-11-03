@@ -587,7 +587,7 @@ async function add_card(card,position) {
   // Weed out the Template cards & Archived 'closed' cards
   if ( card['isTemplate'] || card['closed'] ) return;
 
-  let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
+  let attachment_re=new RegExp('https://trello.com/c/([^/]*)(.*$)');
   let type=card_type[card.idList];
 
   if (type) {
