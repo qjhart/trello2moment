@@ -452,9 +452,9 @@ function format_image(str,position,url) {
   let tmpArray = str.split('/');
   for ( let key in tmpArray ) {
     if (tmpArray[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
-      //      let image = new URL(url).pathname.split('/').pop();
-      let image_url=tmpArray[key].trim()
-      b.push({predicate: schema.contentUrl, object: namedNode(image_url)});
+      let image_url=tmpArray[key].trim();
+      b.push({predicate: schema.contentUrl, object: namedNode(url.replace('#','') + '/' + image_url)});
+      console.log(b)
     } else {
       b.push({predicate: schema.caption, object: literal(tmpArray[key].trim())});
     }
@@ -526,7 +526,7 @@ async function add_desc(node,desc) {
         add_spo(node,schema.creator,text[list_depth]);
         break;
       case "Images":
-        let c = format_image(text[list_depth],list_position);
+        let c = format_image(text[list_depth],list_position,node.id);
         add(node,schema.image,writer.blank(c));
         break;
       case "Learn More":
@@ -587,7 +587,7 @@ async function add_card(card,position) {
   // Weed out the Template cards & Archived 'closed' cards
   if ( card['isTemplate'] || card['closed'] ) return;
 
-  let attachment_re=new RegExp('https://trello.com/c/(.*)/.*$');
+  let attachment_re=new RegExp('https://trello.com/c/([^/]*)(.*$)');
   let type=card_type[card.idList];
 
   if (type) {
