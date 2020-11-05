@@ -454,7 +454,6 @@ function format_image(str,position,url) {
     if (tmpArray[key].match((/.(jpe?g|gif|png|tiff|svg)/))) {
       let image_url=tmpArray[key].trim();
       b.push({predicate: schema.contentUrl, object: namedNode(url.replace('#','') + '/' + image_url)});
-      console.log(b)
     } else {
       b.push({predicate: schema.caption, object: literal(tmpArray[key].trim())});
     }
