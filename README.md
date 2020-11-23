@@ -4,13 +4,19 @@ Converts A Trello board to a moment
 
 ## Overview
 
-This script will convert a Trello board into a moment.  Cards and their descriptors are read and conveted to a set of schema.org webpages.  
+This script will convert a Trello board into a moment.  Cards and their descriptors are read and conveted to a set of schema.org webpages.  A makefile is also included which provides the conversion of the moment.ttl file into a JSONLD format.  This is the file of choice for the client.
 
-## Example
+#### Creating a `fin-import` ready object
 
-The `NgVOlKPZ` directory shows an example board setup, and the `chardonney[.ttl]` is an example derived moment it's mostly from `./trello2moment --board=NgVOlKPZ` although the example has been hand modified to actually work.
+``` bash 
+moment=foo
+board=<Trello board id>
+key=<trello key>
+token=<trello token>
+./trello2moment --overwrite --thumbnails --key=${key} --token=${token} --board=${board} --moment=${moment}
+riot --formatted=JSONLD --base=z: ${moment}_moment.ttl | sed 's/"z:\(.*\)"/"\1"/' > ${moment}/${moment}.jsonld
+```
 
-### Run Example
 
 #### Accessing Trello's API
 
@@ -36,22 +42,3 @@ Make sure the following programs are installed on your system.
       riot:=/usr/local/Cellar/jena/X.X.X/bin/riot
       ```
 
-#### Store Key and Token as Variables in Terminal Session
-
-Open a Terminal window. Cut and paste your key and token into the Terminal.
-  
-Example:
-
-```bash
-key=1234 token=abcdef
-```
-
-Run `echo $key && echo $token`.
-
-#### Trello2Moment Usage (w/out Make file)
-
-Run `node trello2moment --board=BOARD_NAME --moment=MOMENT_NAME [--description=true] [--images=true]`
-
-## LDP
-
-Don't ask, but there this example is currently available in the [sandbox](https://sandbox.dams.library.ucdavis.edu/fcrepo/rest/collection/ex-poetry/chardonney)
