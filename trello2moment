@@ -100,6 +100,7 @@ program.parse(process.argv);
 
 var writer = new N3.Writer({prefixes: prefix});
 
+
 function add(s,p,o) {
 	return writer.addQuad(s,p,o);
 }
@@ -468,6 +469,7 @@ async function add_desc(node,desc) {
   let list_depth=0;
   let list_position=0;
   let json = marked.lexer(desc);
+  let location={};
 
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
@@ -491,6 +493,21 @@ async function add_desc(node,desc) {
       text[list_depth] = '';
       break;
     case 'list_end':
+      switch(pred) {
+      case "Location":
+        if (location.map) {
+          if (location.name) {
+            for (let b=0; b<location.map.length; b++) {
+              if (location.map[b].predicate === schema.name)
+                location.map[b].object=literal(location.name);
+            }
+          }
+          add(node, schema.spatial, writer.blank(location.map));
+        } else if (location.name) {
+          add_spo(node,schema.spatial,location.name);
+        }
+        break;
+      }
       list_depth--;
       break;
     case 'list_item_start':
@@ -541,12 +558,12 @@ async function add_desc(node,desc) {
           add_spo(node,schema.relatedLink,link);
         }
         break;
-      case "Location":
+      case "Location": // Aggregate Location, add at end of list
         if (text[list_depth].match(/^http(s):/)) {
           let b=await format_map_link(text[list_depth]);
-          add(node, schema.spatial, writer.blank(b));
+          location.map=b;
         } else {
-          add_spo(node,schema.spatial,text[list_depth]);
+          location.name=text[list_depth];
         }
         break;
       case "Sources":
