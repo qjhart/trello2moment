@@ -70,7 +70,6 @@ var schema = {
   position:1,
   publisher:1,
   publication:1,
-  relatedLinkText:1,
   relatedLink:1,
   sdDatePublished:1,
   sdPublisher:1,
@@ -470,6 +469,7 @@ async function add_desc(node,desc) {
   let list_position=0;
   let json = marked.lexer(desc);
   let location={};
+  let related=[];
 
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
@@ -545,17 +545,16 @@ async function add_desc(node,desc) {
         let c = format_image(text[list_depth],list_position,node.id);
         add(node,schema.image,writer.blank(c));
         break;
-      case "Learn More":
+      case "Learn More":  // list_depth=2 ends first
         if ( list_depth === 1 ) {
-          add_spo(node,schema.relatedLinkText,text[list_depth]);
+          related.push({predicate: schema.name, object: literal(text[list_depth])});
+          add(node,schema.relatedLink,writer.blank(related));
         } else {
-          let link = text[list_depth];
-          if ( text[list_depth].match(/(http(s?)):\/\//i) === null ) {
-            link = 'https://' + text[list_depth];
-          } else {
-            link = text[list_depth];
+          let link = text[list_depth].trim();
+          if ( link.match(/(http(s?)):\/\//i) === null ) {
+            link = 'https://' + link;
           }
-          add_spo(node,schema.relatedLink,link);
+          related=[{predicate: schema.url, object: namedNode(link)}];
         }
         break;
       case "Location": // Aggregate Location, add at end of list
