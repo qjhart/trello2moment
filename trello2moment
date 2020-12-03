@@ -549,7 +549,6 @@ async function add_desc(node,desc) {
       case "Learn More":  // list_depth=2 ends first
         if ( list_depth === 1 ) {
           related.push({predicate: schema.name, object: literal(text[list_depth])});
-//          console.error(list_depth,"with:",related);
           add(node,schema.relatedLink,writer.blank(related));
         } else {
           let link = text[list_depth];
