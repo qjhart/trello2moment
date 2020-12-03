@@ -70,7 +70,6 @@ var schema = {
   position:1,
   publisher:1,
   publication:1,
-  relatedLinkText:1,
   relatedLink:1,
   sdDatePublished:1,
   sdPublisher:1,
@@ -551,7 +550,7 @@ async function add_desc(node,desc) {
           related.push({predicate: schema.name, object: literal(text[list_depth])});
           add(node,schema.relatedLink,writer.blank(related));
         } else {
-          let link = text[list_depth];
+          let link = text[list_depth].trim();
           if ( link.match(/(http(s?)):\/\//i) === null ) {
             link = 'https://' + link;
           }
