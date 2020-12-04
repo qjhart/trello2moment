@@ -24,7 +24,9 @@ var prefix= {
 }
 
 var rdf= {
-  type:1
+  type:1,
+  first:1,
+  rest:1
 }
 Object.keys(rdf).forEach((k)=>{rdf[k]=namedNode(prefix.rdf+k)});
 
@@ -388,15 +390,17 @@ function add_spo(s,p,o) {
     }
   }
 
-  if ( typeof(o) === 'string' && o.match(urlre) ) {
-    o=o.replace(/[\s\n]+$/,'');
-    o = namedNode(o.replace('https://trello.com/c/','#'));
-        //console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
-  }
-  else {
-    o=o.replace(/[\s\n]+$/,'');
-    o=literal(o)
-    //console.error(`{<${s.id}>,<${p.id}>,"${o}"}`);
+  if ( typeof(o) === 'string') {
+    if ( o.match(urlre) ) {
+      o=o.replace(/[\s\n]+$/,'');
+      o = namedNode(o.replace('https://trello.com/c/','#'));
+      //console.error(`{<${s.id}>,<${p.id}>,<${o}>}`);
+    }
+    else {
+      o=o.replace(/[\s\n]+$/,'');
+      o=literal(o)
+      //console.error(`{<${s.id}>,<${p.id}>,"${o}"}`);
+    }
   }
   add(s,p,o);
 }
@@ -470,6 +474,7 @@ async function add_desc(node,desc) {
   let json = marked.lexer(desc);
   let location={};
   let related=[];
+  let text_rest=[];
 
   // Silly way to flush
   json.push({type:'heading','text':'EndQ'});
@@ -574,8 +579,9 @@ async function add_desc(node,desc) {
       case "Text":
         if ( list_depth === 1 ) {
           add_spo(node, schema.headline, text[list_depth]);
+          add(node, schema.text, literal(text_rest.join("\n")));
         } else {
-          add_spo(node, schema.text, text[list_depth]);
+          text_rest.push(text[list_depth])
         }
         break;
       default:
