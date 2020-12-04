@@ -70,4 +70,4 @@ ${moment}_moment.ttl:
 	./trello2moment --overwrite --thumbnails --key=${key} --token=${token} --board=${board} --moment=${moment}
 
 ${moment}/${moment}.json: ${moment}_moment.ttl
-	${riot} --formatted=JSONLD --base=z: $< | sed 's/"z:\(.*\)"/"\1"/' > $@
+	${riot} --output=jsonld --base=z: $< | sed 's/"z:\(.*\)"/"\1"/' > $@
