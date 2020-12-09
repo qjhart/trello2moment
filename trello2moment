@@ -474,6 +474,7 @@ async function add_desc(node,desc) {
   let json = marked.lexer(desc);
   let location={};
   let related=[];
+  let credit=[];
   let text_rest=[];
 
   // Silly way to flush
@@ -544,7 +545,16 @@ async function add_desc(node,desc) {
         add_spo(node,schema.caption,text[list_depth]);
         break;
       case "Image Credit":
-        add_spo(node,schema.creator,text[list_depth]);
+        if ( list_depth === 1 ) {
+          credit.push({predicate: schema.name, object: literal(text[list_depth])});
+          add(node,schema.creator,writer.blank(credit));
+        } else {
+          let link = text[list_depth].trim();
+          if ( link.match(/(http(s?)):\/\//i) === null ) {
+            link = 'https://' + link;
+          }
+          credit=[{predicate: schema.url, object: namedNode(link)}];
+        }
         break;
       case "Images":
         let c = format_image(text[list_depth],list_position,node.id);
