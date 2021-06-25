@@ -48,6 +48,7 @@ var schema = {
   ImageObject:1,
   ListItem:1,
   Thing:1,
+  Organization:1,
   Person:1,
   Place:1,
   VisualArtwork:1,
@@ -421,12 +422,14 @@ async function getLink(url) {
 async function format_map_link(map_link) {
   let obj;
   let place_re = new RegExp('^https://www.google.com/maps/place/(?<loc>[^/]*)/@?(?<lat>[-0-9.]*),(?<lon>[0-9.-]*),');
-  let googl_map_re = new RegExp('^https://goo.gl/maps/');
+  let googl_map_re = new RegExp('^https://(goo.gl/maps/|g.page/)');
 
   let place_link;
+  map_link=map_link.replace(/[\s\n]+$/,'');
+
   if (map_link.match(googl_map_re)) {
     place_link=await getLink(map_link)
-    //console.error(`getLink ${map_link} -> ${place_link}`)
+    log(`getLink ${map_link} -> ${place_link}`)
   } else {
     place_link=map_link
   }
@@ -436,7 +439,7 @@ async function format_map_link(map_link) {
     obj=found.groups;
     obj.loc = decodeURIComponent(obj.loc);
   } else {
-    obj={url:map_link}
+    obj={url:map_link,name:map_link}
   }
   let b=[{ predicate: rdf.type, object: schema.Place }];
 
@@ -690,9 +693,10 @@ async function add_card(card,position) {
               example:
                 #Images or #Sources vs # Images or # Sources (correct formatting to not break in marked.lexer)
         */
-        if ( card.desc.match(/\#\w+\n/g) ) {
+        if ( card.desc.match(/^\s*\#\w+\n/g) ) {
           card.desc = card.desc.replace(/\#\b/g, '# ');
         }
+
         await add_desc(n,card.desc);
       }
     }

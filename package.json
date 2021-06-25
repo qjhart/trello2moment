@@ -9,6 +9,7 @@
   "author": "Quinn Hart",
   "license": "MIT",
   "dependencies": {
+    "@ucd-lib/fin-cli": "^0.12.3",
     "commander": "^5.1.0",
     "fs": "0.0.1-security",
     "jsonfile": "^5.0.0",
